@@ -2,7 +2,7 @@ import { ref } from "vue";
 import { useClipboard } from "@vueuse/core";
 import { useToast } from "../stores/toast";
 
-export function useShare() {
+export function useNativeShare() {
   const toast = useToast();
   const shareUrl = ref("https://beta.kaleidosync.com");
   const { copy } = useClipboard({ source: shareUrl });

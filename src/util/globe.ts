@@ -49,7 +49,7 @@ const countryColors: Map<string, THREE.Color> = new Map();
 export function createCountryBorders(args = {}) {
   const props = {
     opacity: 1,
-    lineWidth: 0.5,
+    // lineWidth: 0.5,
     vertexColors: true,
     side: THREE.DoubleSide,
     ...args,

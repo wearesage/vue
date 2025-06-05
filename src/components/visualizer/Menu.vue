@@ -41,7 +41,7 @@ import { useFullscreen } from "@vueuse/core";
 import { type AudioSource } from "../../constants/audio-sources";
 import { useViewport } from "../../stores/viewport";
 import { useVisualizer } from "../../stores/visualizer";
-import { useShare } from "../../composables/useShare";
+import { useNativeShare } from "../../composables/useNativeShare";
 import IconButton from "../common/IconButton.vue";
 import Settings from "../visualizer/Settings.vue";
 import SketchBrowser from "../shaders/ShaderBrowser.vue";
@@ -55,7 +55,7 @@ const designs = ref(false);
 const mainMenuVisible = computed(() => visible.value && !source.value && !visualizer.showUniforms && !settings.value && !designs.value);
 const { isSupported, exit, enter, isFullscreen } = useFullscreen();
 const timeout = ref<any>(null);
-const share = useShare();
+const share = useNativeShare();
 
 watch(
   () => viewport.mouse,

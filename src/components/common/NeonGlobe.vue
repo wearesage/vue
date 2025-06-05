@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef, onMounted, onUnmounted, nextTick } from "vue";
+import { ref, shallowRef, onMounted, onUnmounted, nextTick, watch } from "vue";
 import { useViewport } from "../../stores/viewport";
 import { useSketches } from "../../stores/sketches";
 import { useAnimation } from "../../composables/useAnimation";
@@ -22,6 +22,17 @@ function initialize() {
     initialized.value = true;
   });
 }
+
+watch(
+  () => [viewport.width, viewport.height, viewport.dpr],
+  () => {
+    if (!app.value?.renderer) return;
+    app.value.renderer.setPixelRatio(viewport.dpr);
+    app.value.renderer.setSize(viewport.width, viewport.height);
+    app.value.camera.aspect = viewport.width / viewport.height;
+    app.value.camera.updateProjectionMatrix();
+  }
+);
 
 useAnimation(() => {
   if (!initialized.value) return;
