@@ -1,0 +1,55 @@
+@use './size' as *;
+@use './dark' as *;
+@use './blur' as *;
+@use '../theme/colors'  as *;
+
+$thumb-size: 1.75rem;
+$track-size: .15rem;
+
+@mixin thumb {
+  @include size($thumb-size);
+  background: var(--black);
+  border: 1px solid var(--pink);
+  -webkit-appearance: none;
+  border-radius: $thumb-size;
+  transition: var(--hover-transition);
+  cursor: pointer;
+  transform: translateY(-#{.75rem});
+
+  &:active {
+    transform: translateY(-#{.75rem}) scale(.9);
+  }
+}
+
+@mixin track {
+  @include size(100%, $track-size);
+  // border: 1px solid var(--pink);
+  cursor: pointer;
+  border-color: transparent;
+  color: transparent;
+  border-radius: $track-size;
+  background: lighten($black, 5%);
+  // background: var(--light-gray);
+}
+
+@mixin range {
+  input[type='range'] {
+    -webkit-appearance: none;
+  }
+
+  input[type='range']:focus {
+    outline: none;
+  }
+
+  input[type='range']::-moz-range-track {
+    @include track;
+  }
+
+  input[type='range']::-webkit-slider-runnable-track {
+    @include track;
+  }
+
+  input[type='range']::-webkit-slider-thumb {
+    @include thumb;
+  }
+}

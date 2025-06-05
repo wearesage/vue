@@ -1,0 +1,7 @@
+@use "./padding.scss" as *;
+@use "./gap.scss" as *;
+
+@mixin box($padding: 1, $gap: 1) {
+  @include padding($padding);
+  @include gap($gap);
+}

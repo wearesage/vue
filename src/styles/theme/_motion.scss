@@ -1,0 +1,9 @@
+// Default Transition
+$transition-duration: 350ms;
+$transition-easing: cubic-bezier(0.66, 0.05, 0.05, 0.98);
+$transition: all var(--transition-duration) var(--transition-easing);
+
+// Hover Transition
+$hover-transition-duration: 150ms;
+$hover-transition-easing: cubic-bezier(0.21, 0.55, 0.47, 0.98);
+$hover-transition: all var(--hover-transition-duration) var(--hover-transition-easing);

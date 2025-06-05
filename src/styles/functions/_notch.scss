@@ -1,0 +1,15 @@
+// Helpful for dealing with the notch.
+//
+// main {
+//   padding-left: notch(left);
+// }
+//
+// Must be escaped when used in conjunction with `calc()`:
+//
+// main {
+//   padding-left: calc(50px + #{notch(left)});
+// }
+
+@function notch($area) {
+  @return env(safe-area-inset-#{$area});
+}

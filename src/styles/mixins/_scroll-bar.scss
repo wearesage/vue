@@ -1,0 +1,41 @@
+@use "./box.scss" as *;
+@use "./size.scss" as *;
+@use "../theme/colors.scss" as *;
+@mixin hide-scroll-bar {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  &::scrollbar {
+    display: none;
+  }
+}
+
+@mixin scroll-bar {
+  transition: var(--hover-transition);
+
+  &::-webkit-scrollbar {
+    @include box(0, 1);
+    @include size(auto, 2rem);
+    background: lighten($black, 0%);
+    transition: var(--hover-transition);
+  }
+
+  &::-webkit-scrollbar-track {
+    // background: $black;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    @include size(auto, 0.1rem);
+    display: flex;
+    border-radius: 3rem;
+    border: 0.75rem solid lighten($black, 0%);
+    background: rgba($pink, 0.5);
+    transition: var(--hover-transition);
+  }
+
+  /* Handle on hover */
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba($pink, 1);
+  }
+}

@@ -1,0 +1,9 @@
+@mixin strip {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  animation: none;
+  transition: none;
+}

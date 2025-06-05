@@ -1,0 +1,11 @@
+@mixin transition ($name, $transition: var(--transition)) {
+  .#{$name}-enter-active,
+  .#{$name}-leave-active {
+    transition: $transition;
+  }
+
+  .#{$name}-enter-from,
+  .#{$name}-leave-to {
+    @content;
+  }
+}

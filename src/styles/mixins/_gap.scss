@@ -1,0 +1,5 @@
+@use "../functions/spacer" as *;
+
+@mixin gap($multiplier: 1) {
+  gap: spacer($multiplier);
+}

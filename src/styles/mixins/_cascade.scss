@@ -1,0 +1,9 @@
+@mixin cascade($count: 10, $delay: 20ms, $init: 0ms, $animation-name: fade-up-scale) {
+  @for $i from 1 through $count {
+    &:nth-child(#{$i}) {
+      opacity: 0;
+      animation: $animation-name 500ms var(--transition-easing) forwards;
+      animation-delay: #{($init + (($i - 1) * $delay))};
+    }
+  }
+}

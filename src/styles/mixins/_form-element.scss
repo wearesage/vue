@@ -1,0 +1,13 @@
+@use "./box.scss" as *;
+
+@mixin form-element {
+  @include box(0.5 1);
+  border-radius: 2rem;
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--black);
+  // appearance: none;
+
+  .dark & {
+    background: rgba(255, 255, 255, .05);
+  }
+}

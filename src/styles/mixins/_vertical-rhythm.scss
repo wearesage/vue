@@ -1,0 +1,9 @@
+@use '../functions/spacer.scss' as *;
+
+// https://alistapart.com/article/axiomatic-css-and-lobotomized-owls/
+
+@mixin vertical-rhythm($multiplier: 1) {
+  > * + * {
+    margin-top: spacer($multiplier);
+  }
+}

@@ -1,0 +1,23 @@
+@use "sass:meta";
+@use "sass:list";
+@use "../functions/spacer" as *;
+
+@mixin margin($list: 1) {
+  $length: list.length($list);
+
+  @if $length == 1 {
+    margin: spacer(nth($list, 1));
+  }
+
+  @if $length == 2 {
+    margin: spacer(nth($list, 1)) spacer(nth($list, 2));
+  }
+
+  @if $length == 3 {
+    margin: spacer(nth($list, 1)) spacer(nth($list, 2)) spacer(nth($list, 3));
+  }
+
+  @if $length == 4 {
+    margin: spacer(nth($list, 1)) spacer(nth($list, 2)) spacer(nth($list, 3)) spacer(nth($list, 4));
+  }
+}
