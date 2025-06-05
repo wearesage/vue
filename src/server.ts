@@ -15,7 +15,7 @@ export function createApp(args = {} as any) {
   app.use(compression());
   app.use(express.static(config.directory));
 
-  app.get("*", (req, res) => {
+  app.get("/{*splat}", (req, res) => {
     res.sendFile(path.join(config.directory, "index.html"));
   });
 
