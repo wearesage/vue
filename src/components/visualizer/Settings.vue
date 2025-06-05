@@ -31,6 +31,10 @@
 </template>
 
 <script setup lang="ts">
+import Row from "../layout/Row.vue";
+import Toggle from "../forms/Toggle.vue";
+import IconButton from "../common/IconButton.vue";
+
 defineEmits(["toggle"]);
 </script>
 

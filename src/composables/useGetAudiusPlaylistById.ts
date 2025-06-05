@@ -6,7 +6,7 @@ export function useGetAudiusPlaylistById(id: Ref | ComputedRef<string>) {
   const playlist = ref<any>(null);
 
   async function fetchPlaylist() {
-    if (!id.value) return
+    if (!id.value) return;
     playlist.value = await audius.fetchPlaylistById(id.value);
   }
 

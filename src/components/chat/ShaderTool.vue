@@ -1,18 +1,16 @@
 <template>
   <section>
     <aside ref="glsl"></aside>
-    <Shader
-      ref="shader"
-      v-if="sketch"
-      :shader="sketch.shader"
-      :uniforms="sketch.variants[0]"
-      :stream="raf.time / 1000"
-      :animate="true"
-      :dpr="1" />
+    <Shader ref="shader" v-if="sketch" :shader="sketch.shader" :uniforms="sketch.variants[0]" :stream="raf.time / 1000" :animate="true" :dpr="1" />
   </section>
 </template>
 
 <script setup lang="ts">
+import { ref } from "vue";
+import Shader from "../shaders/Shader.vue";
+import { useRAF } from "../../stores/raf";
+import { useGLSLEditor } from "../../composables/useGLSLEditor";
+
 const props = defineProps<{
   sketch: any;
 }>();

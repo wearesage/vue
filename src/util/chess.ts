@@ -1,15 +1,11 @@
 import { clamp } from "./numbers";
 import { interpolateNumber } from "d3-interpolate";
-import { ease } from "../util/ease";
-import { useThrottledConsole } from "../composables/useThrottledConsole";
-
-const console = useThrottledConsole();
-
-type ChessPieceProps = { x: number; y: number; radius: number; draw: any; circle: any; ellipse?: any; fillStyle: string };
+import { ease } from "./ease";
 
 const BLACK = `rgba(10, 10, 10, 1)`;
 const WHITE = "rgba(255, 255, 255, 1)";
 
+export type ChessPieceProps = { x: number; y: number; radius: number; draw: any; circle: any; ellipse?: any; fillStyle: string };
 export type PieceType = "pawn" | "rook" | "knight" | "bishop" | "queen" | "king";
 export type PieceColor = "white" | "black";
 export type Square = { row: number; col: number };

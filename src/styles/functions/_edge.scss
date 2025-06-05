@@ -1,3 +1,7 @@
 @function edge($multiplier: 1) {
   @return calc(#{$multiplier} / 100 * min(var(--viewport-width), var(--viewport-height)));
 }
+
+@function max-edge($multiplier: 1) {
+  @return calc(#{$multiplier} / 100 * max(var(--viewport-width), var(--viewport-height)));
+}

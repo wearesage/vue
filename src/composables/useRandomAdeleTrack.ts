@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import library from "../assets/data/adele.json";
+import library from "../data/music/adele.json";
 import { sample } from "../util/arrays";
 
 export function useRandomAdeleTrack() {

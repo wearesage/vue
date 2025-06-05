@@ -13,14 +13,19 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import Row from "../layout/Row.vue";
+import Column from "../layout/Column.vue";
+import Vinyl from "../common/Vinyl.vue";
 import { useAudius } from "../../stores/audius";
 
 const ID = "jlJAMqZ";
 const audius = useAudius();
 const playlist = ref();
 
-onMounted(async () => {
-  playlist.value = await audius.fetchPlaylistById(ID);
+onMounted(() => {
+  audius.fetchPlaylistById(ID).then(data => {
+    playlist.value = data;
+  });
 });
 </script>
 

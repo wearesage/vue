@@ -84209,31 +84209,31 @@
     "variants": [
       {
         "zoom": {
-          "value": "7.411"
+          "value": 7.411
         },
         "contrast": {
-          "value": "2.19"
+          "value": 2.19
         },
         "orbSize": {
-          "value": "0.573"
+          "value": 0.573
         },
         "radius": {
-          "value": "2.499"
+          "value": 2.499
         },
         "colorShift": {
-          "value": "9.38"
+          "value": 9.38
         },
         "center": {
-          "value": "3.248"
+          "value": 3.248
         },
         "sides": {
-          "value": "6"
+          "value": 6
         },
         "dotMul": {
-          "value": "0.388"
+          "value": 0.388
         },
         "sinMul": {
-          "value": "6.426"
+          "value": 6.426
         }
       }
     ],
@@ -86831,7 +86831,7 @@
         }
       }
     ],
-    "public": false,
+    "public": true,
     "created": {
       "$date": "2024-11-16T00:41:05.029Z"
     },

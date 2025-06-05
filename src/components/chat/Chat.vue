@@ -1,5 +1,5 @@
 <template>
-  <section class="ollama" ref="container">
+  <section class="chat" ref="container">
     <Transition name="fade">
       <ChatGreeting v-if="messages.length === 0" />
     </Transition>
@@ -9,6 +9,13 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from "vue";
+import ChatGreeting from "./ChatGreeting.vue";
+import ChatMessages from "./ChatMessages.vue";
+import ChatInput from "./ChatInput.vue";
+import { useDropMultipleFiles } from "../../composables/useDropMultipleFiles";
+import { useChat } from "../../composables/useChat";
+
 const props = defineProps<{ sketch?: any }>();
 const chat = ref();
 const container = ref();
@@ -26,7 +33,7 @@ const { messages, streamMessage, startNewChat, removeMessage, callTool } = useCh
 </script>
 
 <style lang="scss" scoped>
-.ollama {
+.chat {
   @include flex-column(start, start);
   @include size(100%);
   @include position(fixed, 0 0 0 0, 30);

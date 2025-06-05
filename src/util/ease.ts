@@ -1,4 +1,4 @@
-import { DEFAULT_EASING } from "../data/constants/easing";
+import { DEFAULT_EASING } from "../constants/easing";
 import bezier from "./bezier";
 import { clamp } from "./numbers";
 

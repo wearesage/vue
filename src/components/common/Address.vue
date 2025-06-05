@@ -7,25 +7,36 @@
       <small v-if="full">
         <i>&nbsp;</i>
         {{ value.city }},
-        {{ toCode(value.state)
-        }}
+        {{ toCode(value.state) }}
         {{ value.postcode }}
-        <span v-if="value.suburb">({{ value.suburb }})</span></small>
+        <span v-if="value.suburb">({{ value.suburb }})</span></small
+      >
     </p>
-
   </Row>
 </template>
 
-<script lang="ts" setup>
-import type { Address } from '@/types/address';
-import { STATE_NAME_MAP } from '../../util/states';
+<script lang="ts">
+export interface Address {
+  house_number?: string;
+  road?: string;
+  city?: string;
+  state?: string;
+  postcode?: string;
+  suburb?: string;
+}
+</script>
 
-const toCode = (state: string) => (STATE_NAME_MAP as any)?.[state]
+<script lang="ts" setup>
+import Row from "../layout/Row.vue";
+import Icon from "../common/Icon.vue";
+import { STATE_NAME_MAP } from "../../util/states";
+
+const toCode = (state?: string) => (state ? (STATE_NAME_MAP as any)?.[state] : "");
 
 defineProps<{
-  value: Address
+  value: Address;
   full?: boolean;
-}>()
+}>();
 </script>
 
 <style lang="scss" scoped>
@@ -34,12 +45,12 @@ address {
 }
 
 small {
-  font-size: .8rem;
+  font-size: 0.8rem;
   margin-left: 1rem;
 
   span {
-    opacity: .5;
-    padding-left: .25rem;
+    opacity: 0.5;
+    padding-left: 0.25rem;
   }
 
   i {

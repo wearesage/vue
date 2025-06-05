@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { ref, computed, watch } from "vue";
 import { createAppKit, useAppKit, useAppKitAccount } from "@reown/appkit/vue";
 import { Ethers5Adapter } from "@reown/appkit-adapter-ethers5";
 import { mainnet, arbitrum } from "@reown/appkit/networks";

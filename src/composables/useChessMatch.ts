@@ -1,5 +1,5 @@
 import { ref, computed } from "vue";
-import { initializePieces, ChessPiece, getPieceAt, getMoveNotation, calculatePossibleMoves, type Square } from "../util/chess";
+import { initializePieces, type ChessPiece, getPieceAt, getMoveNotation, calculatePossibleMoves, type Square } from "../util/chess";
 import { useChessPieces } from "./useChessPieces";
 import { useArrowControlledRefHistory } from "./useArrowControlledRefHistory";
 

@@ -1,14 +1,12 @@
 import { ref, watch, onMounted, onUnmounted, type Ref } from "vue";
-import { EditorView } from "@codemirror/view";
+import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, dropCursor } from "@codemirror/view";
 import { autocompletion, closeBrackets } from "@codemirror/autocomplete";
-import { bracketMatching, indentOnInput } from "@codemirror/language";
+import { bracketMatching, indentOnInput, LanguageSupport, LRLanguage, delimitedIndent, indentNodeProp, continuedIndent, foldInside, foldNodeProp } from "@codemirror/language";
 import { parser as glslParser } from "lezer-glsl";
-import { LanguageSupport, LRLanguage, delimitedIndent, indentNodeProp, continuedIndent, foldInside, foldNodeProp } from "@codemirror/language";
 import { defaultKeymap, indentWithTab, history, historyKeymap } from "@codemirror/commands";
-import { keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, dropCursor } from "@codemirror/view";
 import * as themes from "thememirror";
-import * as glslUtils from "../data/constants/glsl-util";
-import { TYPES, KEYWORDS, MATH } from "../data/constants/glsl-lang";
+import * as glslUtils from "../constants/glsl-util";
+import { TYPES, KEYWORDS, MATH } from "../constants/glsl-lang";
 
 export function useGLSLEditor(
   parentDOMElement: Ref<HTMLElement>,

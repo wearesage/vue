@@ -1,7 +1,7 @@
-import { ref, computed, watch, onMounted, onUnmounted, nextTick, type Ref } from "vue";
-import { ShaderProps } from "../components/webgl/Shader.vue";
-import * as glslUtil from "../data/constants/glsl-util";
-import { DEFAULT_FRAGMENT_SHADER, DEFAULT_VERTEX_SHADER } from "../data/constants/glsl-defaults";
+import { ref, computed, watch, type Ref, watchEffect, watchSyncEffect } from "vue";
+import type { ShaderProps } from "@/components/shaders/Shader.vue";
+import * as glslUtil from "../constants/glsl-util";
+import { DEFAULT_FRAGMENT_SHADER, DEFAULT_VERTEX_SHADER } from "../constants/glsl-defaults";
 import { useViewport } from "../stores/viewport";
 import { useAnimation } from "./useAnimation";
 
@@ -145,7 +145,7 @@ export function useShader(props: ShaderProps, mesh: Ref<any>) {
     () => update()
   );
 
-  onMounted(() => {
+  watchSyncEffect((onCleanup) => {
     initializeUniforms();
 
     if (props.animate) {
@@ -153,10 +153,8 @@ export function useShader(props: ShaderProps, mesh: Ref<any>) {
     } else {
       render(Math.random() * 99999999);
     }
-  });
 
-  onUnmounted(() => {
-    stop();
+    onCleanup(() => stop());
   });
 
   return {

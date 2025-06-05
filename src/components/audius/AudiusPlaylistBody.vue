@@ -6,6 +6,10 @@
 </template>
 
 <script setup lang="ts">
+import Column from "../layout/Column.vue";
+import AudiusPlaylistHeader from "./AudiusPlaylistHeader.vue";
+import AudiusTrackList from "./AudiusTrackList.vue";
+
 defineProps<{ playlist: any }>();
 </script>
 

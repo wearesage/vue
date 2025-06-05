@@ -1,6 +1,6 @@
 import { ref, onMounted, type Ref, type ComputedRef, watch } from "vue";
 import { select } from "d3-selection";
-import { zoom, zoomIdentity, ZoomTransform, type D3ZoomEvent } from "d3-zoom";
+import { zoom, zoomIdentity, type ZoomTransform, type D3ZoomEvent } from "d3-zoom";
 import "d3-transition";
 
 interface ZoomOptions {

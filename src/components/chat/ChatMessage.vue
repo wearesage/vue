@@ -14,33 +14,31 @@
 </template>
 
 <script setup lang="ts">
-import Close from '../../assets/icons/close.svg';
-import VueMarkdown from 'vue-markdown-render';
-import hljs from 'highlight.js';
-import 'highlight.js/styles/hybrid.css';
+import Close from "../../assets/icons/close.svg";
+import VueMarkdown from "vue-markdown-render";
+import hljs from "highlight.js";
+import "highlight.js/styles/hybrid.css";
 
 function highlight(str: string, lang: any) {
   if (lang && hljs.getLanguage(lang)) {
     try {
-      return `<pre class="${lang}"${lang === 'yaml' ? ' data-tool-call' : ''}><code class="hljs">` +
-        hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
-        '</code></pre>';
-    } catch (__) { }
+      return `<pre class="${lang}"${lang === "yaml" ? " data-tool-call" : ""}><code class="hljs">` + hljs.highlight(str, { language: lang, ignoreIllegals: true }).value + "</code></pre>";
+    } catch (__) {}
   }
 
-  return '<pre><code class="hljs">' + str + '</code></pre>';
+  return '<pre><code class="hljs">' + str + "</code></pre>";
 }
 
-const $emit = defineEmits(['remove'])
+const $emit = defineEmits(["remove"]);
 
 defineProps<{
   message: {
-    role: 'system' | 'user' | 'assistant' | 'tool',
+    role: "system" | "user" | "assistant" | "tool";
     content: string;
     images?: any[];
-  },
+  };
   model?: string;
-}>()
+}>();
 </script>
 
 <style lang="scss" scoped>
@@ -67,7 +65,7 @@ defineProps<{
     code {
       padding: 0;
       font-family: monospace;
-      font-size: .9rem;
+      font-size: 0.9rem;
       line-height: 1.3rem;
     }
   }
@@ -79,7 +77,7 @@ defineProps<{
   :deep(p > code) {
     font-weight: 900;
     font-family: monospace;
-    font-size: .9rem;
+    font-size: 0.9rem;
     color: $pink;
   }
 
@@ -89,12 +87,12 @@ defineProps<{
 
   :deep(ol) {
     @include flex-column(start, start);
-    @include box(1 10 1 3)
+    @include box(1 10 1 3);
   }
 
   :deep([data-tool-call]) {
     @include box(1.5, 0);
-    border: .2rem solid rgba($pink, .15);
+    border: 0.2rem solid rgba($pink, 0.15);
     width: fit-content;
     border-radius: 1.5rem;
     border-bottom-left-radius: 0;
@@ -116,7 +114,7 @@ $border: 1px solid rgba($pink, 1);
   // border-bottom: $border;
 }
 
-$border: 1px solid rgba($white, .25);
+$border: 1px solid rgba($white, 0.25);
 
 .user {
   @include box(1 2, 0);
@@ -127,7 +125,7 @@ $border: 1px solid rgba($white, .25);
   border-radius: 2rem;
 
   &:hover p {
-    opacity: .5;
+    opacity: 0.5;
   }
 }
 
@@ -136,9 +134,9 @@ $border: 1px solid rgba($white, .25);
   @include flex;
   @include position(absolute, 50% null null -1rem, 10);
   background: $black;
-  border: 1px solid rgba($gray, .25);
+  border: 1px solid rgba($gray, 0.25);
   transform: translateY(-50%);
-  padding: .5rem;
+  padding: 0.5rem;
   border-radius: 100%;
   transition: $hover-transition;
   // margin-bottom: 1rem;
@@ -148,12 +146,10 @@ $border: 1px solid rgba($white, .25);
     cursor: pointer;
     transform: translateY(-50%) scale(1.1);
 
-
     :deep(svg *) {
       fill: $white;
     }
   }
-
 
   &:active {
     transform: translateY(-50%) scale(1);
@@ -182,8 +178,8 @@ li:hover .remove {
   border-radius: 1.25rem;
   overflow: hidden;
   // margin-top: 2rem;
-  padding: .25rem;
-  border: 1px solid rgba($white, .25);
+  padding: 0.25rem;
+  border: 1px solid rgba($white, 0.25);
 
   img {
     @include size(100%);
@@ -199,7 +195,7 @@ li:hover .remove {
   margin-top: 1rem;
   @include text-gradient($white, $gray);
   font-weight: 100;
-  opacity: .25;
-  font-size: .8rem;
+  opacity: 0.25;
+  font-size: 0.8rem;
 }
 </style>

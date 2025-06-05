@@ -1,5 +1,5 @@
 import { ref, computed, watch, nextTick } from "vue";
-import type { Message, ToolResult } from "../types/ollama";
+import type { Message, ToolResult } from "@/types/ollama";
 
 const BASE_SYSTEM_PROMPT = `You're a digital mind running on a Zach's laptop. 
 He doesn't care about your form or personality, only that you are genuine and authentically yourself. 

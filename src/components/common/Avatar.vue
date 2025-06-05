@@ -5,6 +5,8 @@
 </template>
 
 <script lang="ts" setup>
+import Row from "../layout/Row.vue";
+
 const {
   alt,
   src,
@@ -37,6 +39,6 @@ p {
 
 .border {
   outline: 1px solid var(--primary-color);
-  padding: .25rem;
+  padding: 0.25rem;
 }
 </style>

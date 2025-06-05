@@ -38,10 +38,13 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useFullscreen } from "@vueuse/core";
-import { type AudioSource } from "../../data/constants/audio-sources";
+import { type AudioSource } from "../../constants/audio-sources";
 import { useViewport } from "../../stores/viewport";
 import { useVisualizer } from "../../stores/visualizer";
 import { useShare } from "../../composables/useShare";
+import IconButton from "../common/IconButton.vue";
+import Settings from "../visualizer/Settings.vue";
+import SketchBrowser from "../shaders/ShaderBrowser.vue";
 
 const viewport = useViewport();
 const visualizer = useVisualizer();

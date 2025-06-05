@@ -1,26 +1,14 @@
 <template>
   <aside>
-    <ul
-      class="dates"
-      ref="dates">
-      <li
-        v-for="(day, i) in days"
-        :key="`${day}-${i}`"
-        :class="{ selected: i == selected }"
-        @click="selectDate(i)">
+    <ul class="dates" ref="dates">
+      <li v-for="(day, i) in days" :key="`${day}-${i}`" :class="{ selected: i == selected }" @click="selectDate(i)">
         <p class="month">{{ day.month }}</p>
         <p class="day">{{ day.day }}</p>
       </li>
     </ul>
 
-    <TransitionGroup
-      name="slot"
-      tag="ul"
-      class="slots">
-      <li
-        v-for="(slot, i) in days[selected].slots"
-        :key="`slot-${selected}-${i}`"
-        @click="selectSlot(i)">
+    <TransitionGroup name="slot" tag="ul" class="slots">
+      <li v-for="(slot, i) in days[selected].slots" :key="`slot-${selected}-${i}`" @click="selectSlot(i)">
         {{ slot }}
       </li>
     </TransitionGroup>
@@ -28,6 +16,9 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, onMounted, TransitionGroup } from "vue";
+import { useRAF } from "../../stores/raf";
+import { useViewport } from "../../stores/viewport";
 import { interpolateNumber } from "d3-interpolate";
 import { format, addDays } from "date-fns";
 

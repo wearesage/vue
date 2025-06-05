@@ -5,7 +5,7 @@ import { useAudioAnalyser } from "../composables/useAudioAnalyser";
 import { useSketches } from "./sketches";
 import { useAudioElement } from "../composables/useAudioElement";
 import { useRandomAdeleTrack } from "../composables/useRandomAdeleTrack";
-import { AUDIO_SOURCES, AUDIO_SOURCE_ICONS, type AudioSource } from "../data/constants/audio-sources";
+import { AUDIO_SOURCES, AUDIO_SOURCE_ICONS, type AudioSource } from "../constants/audio-sources";
 
 export const useVisualizer = defineStore("visualizer", () => {
   const sketches = useSketches();

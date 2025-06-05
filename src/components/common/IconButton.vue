@@ -8,6 +8,8 @@
 </template>
 
 <script setup lang="ts">
+import Icon from "../common/Icon.vue";
+
 defineEmits(["click"]);
 
 defineProps<{

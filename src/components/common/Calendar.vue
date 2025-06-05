@@ -1,10 +1,6 @@
 <template>
-  <aside
-    class="date-picker"
-    :class="{ expanded }">
-    <section
-      class="days"
-      :class="{ visible: showDays }">
+  <aside class="date-picker" :class="{ expanded }">
+    <section class="days" :class="{ visible: showDays }">
       <section class="selected">
         <Button @click="prevMonth"> < </Button>
 
@@ -16,41 +12,13 @@
         <Button @click="nextMonth"> > </Button>
       </section>
       <header>
-        <Button
-          :disabled="true"
-          :square="true"
-          >S</Button
-        >
-        <Button
-          :disabled="true"
-          :square="true"
-          >M</Button
-        >
-        <Button
-          :disabled="true"
-          :square="true"
-          >T</Button
-        >
-        <Button
-          :disabled="true"
-          :square="true"
-          >W</Button
-        >
-        <Button
-          :disabled="true"
-          :square="true"
-          >Th</Button
-        >
-        <Button
-          :disabled="true"
-          :square="true"
-          >F</Button
-        >
-        <Button
-          :disabled="true"
-          :square="true"
-          >S</Button
-        >
+        <Button :disabled="true" :square="true">S</Button>
+        <Button :disabled="true" :square="true">M</Button>
+        <Button :disabled="true" :square="true">T</Button>
+        <Button :disabled="true" :square="true">W</Button>
+        <Button :disabled="true" :square="true">Th</Button>
+        <Button :disabled="true" :square="true">F</Button>
+        <Button :disabled="true" :square="true">S</Button>
       </header>
       <Button
         v-for="i in totalDaysInMonth"
@@ -69,9 +37,11 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, watch, type Ref } from "vue";
 import { addYears, getDaysInMonth, startOfMonth, isAfter, isBefore } from "date-fns";
-
-import { generateMonthMap, type Month, type Months } from "../../util";
+import Button from "./Button.vue";
+import Row from "../layout/Row.vue";
+import { generateMonthMap, type Month, type Months } from "../../util/dates";
 
 const props = withDefaults(
   defineProps<{
@@ -124,10 +94,12 @@ function selectMonth(i: number) {
 }
 
 function prevMonth() {
+  if (!selectedMonth.value) return;
   selectMonth(Math.max(selectedMonth.value.index - 1, 0));
 }
 
 function nextMonth() {
+  if (!selectedMonth.value) return;
   selectMonth(Math.min(selectedMonth.value.index + 1, 11));
 }
 

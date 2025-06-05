@@ -1,41 +1,26 @@
 <template>
-  <div
-    class="camera-container"
-    :class="{ active: isActive }">
-    <video
-      ref="videoRef"
-      :autoplay="autoplay"
-      :width="width * dpr"
-      :height="height * dpr"
-      :style="{ width: width + 'px', height: height + 'px' }"
-      :muted="muted"
-      :playsinline="playsinline"
-      @loadedmetadata="onVideoLoaded" />
-    <slot
-      v-if="!isActive"
-      name="inactive">
+  <div class="camera-container" :class="{ active: isActive }">
+    <video ref="videoRef" :autoplay="autoplay" :width="width * dpr" :height="height * dpr" :style="{ width: width + 'px', height: height + 'px' }" :muted="muted" :playsinline="playsinline" @loadedmetadata="onVideoLoaded" />
+    <slot v-if="!isActive" name="inactive">
       <div class="row">
-        <button @click="start"><MagicWand /></button>
+        <button @click="start"><WandIcon /></button>
       </div>
     </slot>
-    <slot
-      v-else
-      name="active">
+    <slot v-else name="active">
       <div class="row">
         <button @click="takePhoto"><CameraIcon /></button>
       </div>
     </slot>
-    <slot
-      v-if="error"
-      name="error"
-      :error="error">
+    <slot v-if="error" name="error" :error="error">
       <div class="error">{{ error.message }}</div>
     </slot>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Camera as CameraIcon, MagicWand } from "@iconoir/vue";
+import WandIcon from "../../assets/icons/wand.svg";
+import CameraIcon from "../../assets/icons/camera.svg";
+
 import { ref, onBeforeUnmount } from "vue";
 
 const props = defineProps({

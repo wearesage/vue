@@ -6,8 +6,10 @@
 </template>
 
 <script setup lang="ts">
-import { useAudius } from "../../stores/audius";
 import { useRouter } from "vue-router";
+import Input from "../forms/Input.vue";
+import IconButton from "../common/IconButton.vue";
+import { useAudius } from "../../stores/audius";
 
 const audius = useAudius();
 const router = useRouter();

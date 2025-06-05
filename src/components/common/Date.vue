@@ -6,10 +6,11 @@
 </template>
 
 <script setup lang="ts">
-const win = window as any;
+import { formatTime, formatTimeAgo } from "../../util/time";
+
 const props = defineProps<{ value: any }>();
-const time = formatTime(props.value)
-const timeAgo = formatTimeAgo(props.value)
+const time = formatTime(props.value);
+const timeAgo = formatTimeAgo(props.value);
 </script>
 
 <style lang="scss" scoped>
@@ -23,12 +24,12 @@ const timeAgo = formatTimeAgo(props.value)
 }
 
 p {
-  font-size: .9rem;
-  margin-bottom: .15rem;
+  font-size: 0.9rem;
+  margin-bottom: 0.15rem;
 }
 
 small {
-  font-size: .8em;
+  font-size: 0.8em;
   color: var(--gray);
 }
 </style>

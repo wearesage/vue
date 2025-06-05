@@ -9,6 +9,9 @@
 </template>
 
 <script setup lang="ts">
+import Row from "../layout/Row.vue";
+import IconButton from "../common/IconButton.vue";
+
 defineProps<{
   pages: number;
   active: number;

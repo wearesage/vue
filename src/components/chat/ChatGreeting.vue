@@ -3,7 +3,9 @@
 </template>
 
 <script setup lang="ts">
-const greeting = useRandomGreeting()
+import { useRandomGreeting } from "../../composables/useRandomGreeting";
+
+const greeting = useRandomGreeting();
 </script>
 
 <style lang="scss" scoped>
@@ -12,10 +14,10 @@ h1 {
   @include box(0 1);
   color: $white;
   transform: translateY(-50%) translateX(-75%);
-  animation: fade-scale .75s $transition-easing;
+  animation: fade-scale 0.75s $transition-easing;
   font-size: 3rem;
   text-transform: lowercase;
-  border-bottom: 1px solid rgba($gray, .25);
+  border-bottom: 1px solid rgba($gray, 0.25);
   border-radius: 2rem;
   padding-bottom: 1rem;
 

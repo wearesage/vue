@@ -1,6 +1,5 @@
-import AudioAnalyser from "../classes/AudioAnalyser";
-import { definitions } from "../classes/AudioAnalyser";
 import { ref, shallowRef, computed } from "vue";
+import AudioAnalyser, { definitions } from "../classes/AudioAnalyser";
 import { useRAF } from "../stores/raf";
 
 export function useAudioAnalyser() {

@@ -1,19 +1,95 @@
-import { interpolateNumber } from 'd3-interpolate';
+import { interpolateNumber } from "d3-interpolate";
+import { clone } from "./clone";
+import { replaceAllSubstrings, replaceAllWords } from "./strings";
+
+// Type definitions
+export type UniformType = 0 | 1 | 2 | 3; // float, int, vec2, vec3
+export type FloatUniform = [string, 0, number, number, number, boolean, boolean];
+export type IntUniform = [string, 1, number, null, null, null, boolean];
+export type Vec2Uniform = [string, 2, [number, number], null, null, null, boolean];
+export type Vec3Uniform = [string, 3, [number, number, number], null, null, null, boolean];
+export type UniformTuple = FloatUniform | IntUniform | Vec2Uniform | Vec3Uniform;
+
+// Uniform class definition
+export class Uniform {
+  private ctx: WebGL2RenderingContext;
+  private location: WebGLUniformLocation | null;
+  private name: string;
+  private type: UniformType;
+  private value: any;
+  private min: any;
+  private max: any;
+
+  constructor(ctx: WebGL2RenderingContext, program: WebGLProgram, uniform: UniformTuple) {
+    this.ctx = ctx;
+    this.name = uniform[0];
+    this.type = uniform[1];
+    this.value = uniform[2];
+    this.min = uniform[3];
+    this.max = uniform[4];
+    this.location = ctx.getUniformLocation(program, this.name);
+  }
+
+  set(value: any) {
+    this.value = value;
+    this.update();
+  }
+
+  update() {
+    if (!this.location) return;
+
+    switch (this.type) {
+      case 0: // float
+        this.ctx.uniform1f(this.location, this.value);
+        break;
+      case 1: // int
+        this.ctx.uniform1i(this.location, this.value);
+        break;
+      case 2: // vec2
+        this.ctx.uniform2fv(this.location, this.value);
+        break;
+      case 3: // vec3
+        this.ctx.uniform3fv(this.location, this.value);
+        break;
+    }
+  }
+}
+
+// Plane class definition
+export class Plane {
+  private ctx: WebGL2RenderingContext;
+  private buffer: WebGLBuffer | null;
+
+  constructor(ctx: WebGL2RenderingContext, program: WebGLProgram) {
+    this.ctx = ctx;
+    this.buffer = ctx.createBuffer();
+
+    const vertices = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
+
+    ctx.bindBuffer(ctx.ARRAY_BUFFER, this.buffer);
+    ctx.bufferData(ctx.ARRAY_BUFFER, vertices, ctx.STATIC_DRAW);
+  }
+
+  render() {
+    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.buffer);
+    this.ctx.drawArrays(this.ctx.TRIANGLE_STRIP, 0, 4);
+  }
+}
 
 export function createWebGL2Context(
   canvas: HTMLCanvasElement,
   config?: {
     alpha?: boolean;
     antialias?: boolean;
-    powerPreference?: 'default' | 'high-performance';
+    powerPreference?: "default" | "high-performance";
     preserveDrawingBuffer?: boolean;
     depth?: boolean;
   }
 ): WebGL2RenderingContext {
-  return canvas.getContext('webgl2', {
+  return canvas.getContext("webgl2", {
     alpha: false,
     antialias: true,
-    powerPreference: 'high-performance',
+    powerPreference: "high-performance",
     preserveDrawingBuffer: false,
     depth: false,
     stencil: false,
@@ -21,17 +97,7 @@ export function createWebGL2Context(
   }) as WebGL2RenderingContext;
 }
 
-export function compileShader({
-  ctx,
-  type,
-  source,
-  program,
-}: {
-  ctx: WebGL2RenderingContext;
-  type: 'VERTEX_SHADER' | 'FRAGMENT_SHADER';
-  source: string;
-  program: WebGLProgram;
-}) {
+export function compileShader({ ctx, type, source, program }: { ctx: WebGL2RenderingContext; type: "VERTEX_SHADER" | "FRAGMENT_SHADER"; source: string; program: WebGLProgram }) {
   const shader = ctx.createShader(ctx[type]) as WebGLShader;
 
   try {
@@ -62,15 +128,7 @@ export function compileShader({
   }
 }
 
-export function buildUniforms({
-  ctx,
-  program,
-  uniforms,
-}: {
-  ctx: WebGL2RenderingContext;
-  program: WebGLProgram;
-  uniforms: UniformTuple[];
-}) {
+export function buildUniforms({ ctx, program, uniforms }: { ctx: WebGL2RenderingContext; program: WebGLProgram; uniforms: UniformTuple[] }) {
   return uniforms.reduce((acc: Record<string, Uniform>, uniform: UniformTuple) => {
     acc[uniform[0]] = new Uniform(ctx, program, uniform);
     return acc;
@@ -101,26 +159,12 @@ export type WebGLApp = {
   cleanup: () => void;
 };
 
-export function createWebGL2App({
-  ctx,
-  vertexShader,
-  fragmentShader,
-  uniforms,
-  onError,
-  onSuccess,
-}: {
-  ctx: WebGL2RenderingContext;
-  vertexShader: string;
-  fragmentShader: string;
-  uniforms: UniformTuple[];
-  onError?: any;
-  onSuccess?: any;
-}): WebGLApp | null {
+export function createWebGL2App({ ctx, vertexShader, fragmentShader, uniforms, onError, onSuccess }: { ctx: WebGL2RenderingContext; vertexShader: string; fragmentShader: string; uniforms: UniformTuple[]; onError?: any; onSuccess?: any }): WebGLApp | null {
   const program = ctx.createProgram() as WebGLProgram;
 
   const vertex = compileShader({
     ctx,
-    type: 'VERTEX_SHADER',
+    type: "VERTEX_SHADER",
     source: vertexShader,
     program,
   });
@@ -132,7 +176,7 @@ export function createWebGL2App({
 
   const fragment = compileShader({
     ctx,
-    type: 'FRAGMENT_SHADER',
+    type: "FRAGMENT_SHADER",
     source: fragmentShader,
     program,
   });
@@ -156,7 +200,7 @@ export function createWebGL2App({
   const plane = new Plane(ctx, program);
 
   ctx.enableVertexAttribArray(0);
-  ctx.vertexAttribPointer(ctx.getAttribLocation(program, 'position'), 2, ctx.FLOAT, false, 0, 0);
+  ctx.vertexAttribPointer(ctx.getAttribLocation(program, "position"), 2, ctx.FLOAT, false, 0, 0);
 
   onSuccess?.();
 
@@ -231,7 +275,7 @@ export function interpolateUniforms(a: UniformTuple[], b: UniformTuple[]) {
     dimensions.push(dimension);
   });
 
-  return (t: number) => dimensions.map(d => d.map(v => v(t)));
+  return (t: number) => dimensions.map((d) => d.map((v) => v(t)));
 }
 
 export function areUniformsEqual(a: UniformTuple, b: UniformTuple) {
@@ -247,13 +291,13 @@ export function normalizeSketch(sketch: { shader: string; variants: UniformTuple
   const normalized = clone(sketch);
 
   normalized.variants.forEach((variant: UniformTuple[]) => {
-    variant.forEach(uniform => {
+    variant.forEach((uniform) => {
       if (uniform[1] === 0) {
         uniform[2] = parseFloat(`${uniform[2]}`);
         uniform[3] = parseFloat(`${uniform[3]}`);
         uniform[4] = parseFloat(`${uniform[4]}`);
 
-        if (typeof uniform[5] !== 'boolean') (uniform as FloatUniform)[5] = false;
+        if (typeof uniform[5] !== "boolean") (uniform as FloatUniform)[5] = false;
       } else {
         uniform[3] = null;
         uniform[4] = null;
@@ -266,7 +310,7 @@ export function normalizeSketch(sketch: { shader: string; variants: UniformTuple
         uniform[2][2] = parseFloat(`${uniform[2][2]}`);
       }
 
-      if (typeof uniform[6] !== 'boolean') uniform[6] = false;
+      if (typeof uniform[6] !== "boolean") uniform[6] = false;
     });
   });
 
@@ -277,9 +321,9 @@ export function normalizeSketch(sketch: { shader: string; variants: UniformTuple
 export function upgradeShader(shader: string) {
   let string = shader;
 
-  string = replaceAllSubstrings(string, 'void main ()', 'out vec4 fragColor;\n\nvoid main ()');
-  string = replaceAllSubstrings(string, 'void main()', 'out vec4 fragColor;\n\nvoid main ()');
-  string = replaceAllWords(string, 'gl_FragColor', 'fragColor');
+  string = replaceAllSubstrings(string, "void main ()", "out vec4 fragColor;\n\nvoid main ()");
+  string = replaceAllSubstrings(string, "void main()", "out vec4 fragColor;\n\nvoid main ()");
+  string = replaceAllWords(string, "gl_FragColor", "fragColor");
 
   return string;
 }

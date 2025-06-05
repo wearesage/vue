@@ -66,8 +66,6 @@ export const useSketches = defineStore("sketches", () => {
     selectSketchByIndex(nextIndex);
   }
 
-  // selectSketchByIndex(13);
-
   sampleSketches();
 
   return {

@@ -2,27 +2,12 @@ import { ref, watch, onMounted, type Ref } from "vue";
 import { EditorView } from "codemirror";
 import { autocompletion, closeBrackets } from "@codemirror/autocomplete";
 import { bracketMatching, indentOnInput } from "@codemirror/language";
-import {
-  defaultKeymap,
-  indentWithTab,
-  history,
-  historyKeymap,
-} from "@codemirror/commands";
-import {
-  keymap,
-  lineNumbers,
-  highlightActiveLine,
-  highlightActiveLineGutter,
-  dropCursor,
-} from "@codemirror/view";
+import { defaultKeymap, indentWithTab, history, historyKeymap } from "@codemirror/commands";
+import { keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, dropCursor } from "@codemirror/view";
 import { graphql } from "cm6-graphql";
 import * as themes from "thememirror";
 
-export function useGraphQLEditor(
-  parentDOMElement: Ref<HTMLElement | null>,
-  rawQuery: Ref<string>,
-  schema: Ref<any>
-) {
+export function useGraphQLEditor(parentDOMElement: Ref<HTMLElement | null>, rawQuery: Ref<string>, schema: Ref<any>) {
   const editor = ref<EditorView | null>(null);
   const initialized = ref(false);
 
@@ -31,10 +16,10 @@ export function useGraphQLEditor(
     (val) => (val ? init() : null)
   );
 
-  function update (val: any) {
+  function update(val: any) {
     if (val.docChanged) {
-      const value: string = val.state.doc.text.join('\n')
-      rawQuery.value = value
+      const value: string = val.state.doc.text.join("\n");
+      rawQuery.value = value;
     }
   }
 
@@ -63,7 +48,7 @@ export function useGraphQLEditor(
     initialized.value = true;
   }
 
-  onMounted(async () => {
+  onMounted(() => {
     if (!parentDOMElement.value || !schema.value) return;
     if (schema.value && !initialized.value) init();
   });

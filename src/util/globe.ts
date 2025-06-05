@@ -1,10 +1,10 @@
-import countriesMetadata from "../data/utility/countries-metadata.json";
+import countriesMetadata from "../data/geo/countries-metadata.json";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
-import population from "../data/utility/population.json";
+import population from "../data/geo/users-by-location.json";
 
 const THEME_COLORS = [
   "#f22d85", // pink
@@ -49,7 +49,7 @@ const countryColors: Map<string, THREE.Color> = new Map();
 export function createCountryBorders(args = {}) {
   const props = {
     opacity: 1,
-    lineWidth: 1,
+    lineWidth: 0.5,
     vertexColors: true,
     side: THREE.DoubleSide,
     ...args,
@@ -103,13 +103,13 @@ export function createCountryBorders(args = {}) {
 export function createSimpleCountryFills() {
   try {
     // Check if we have fill data
-    if (!countriesMetadata.base64FillPositions) {
+    if (!countriesMetadata.base64Positions) {
       console.warn("No fill data available.");
       return null;
     }
 
     // Decode fill positions
-    const base64 = countriesMetadata.base64FillPositions;
+    const base64 = countriesMetadata.base64Positions;
     const binaryString = atob(base64);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
@@ -141,10 +141,14 @@ const CTX_OPTIONS: { antialias: boolean; powerPreference: WebGLPowerPreference }
   powerPreference: "high-performance",
 };
 
-export function initGlobe({ canvas, viewport }: any) {
+export function initGlobe({ canvas, viewport: v }: any) {
+  const viewport = v || { width: window.innerWidth, height: window.innerHeight, dpr: window.devicePixelRatio };
   const ctx = canvas.value.getContext("webgl2", CTX_OPTIONS);
-  const camera = new THREE.PerspectiveCamera(45, viewport.width / viewport.height, 0.01, 1000);
-  camera.position.z = Math.PI;
+  const camera = new THREE.PerspectiveCamera(45, viewport.width / viewport.height, 0.001, 2000);
+  // camera.position.z = Math.PI / 2;
+  camera.position.x = 0.1056750061901908;
+  camera.position.y = 1.08473043473166818;
+  camera.position.z = 1.432277547321116;
   const renderer = new THREE.WebGLRenderer({ context: ctx, ...CTX_OPTIONS });
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(viewport.width, viewport.height);
@@ -152,16 +156,17 @@ export function initGlobe({ canvas, viewport }: any) {
   scene.background = new THREE.Color("rgb(0, 0, 0)");
   const ambientLight = new THREE.AmbientLight(new THREE.Color("rgb(0, 45, 133)"), 0.9);
   const directionalLight = new THREE.DirectionalLight("rgb(242, 45, 0)", 1);
-  directionalLight.position.set(5, 3, 5);
+  directionalLight.position.set(5, 13, 5);
   scene.add(ambientLight);
   scene.add(directionalLight);
-  const geometry = new THREE.SphereGeometry(1, 32, 32);
+  const geometry = new THREE.SphereGeometry(1, 48, 48);
   const material = new THREE.MeshBasicMaterial({
     color: new THREE.Color(0x000000),
     side: THREE.FrontSide,
   });
 
   const globe = new THREE.Mesh(geometry, material);
+  // globe.opacity = 0.5;
   scene.add(globe);
 
   // Add borders back
@@ -175,20 +180,25 @@ export function initGlobe({ canvas, viewport }: any) {
   // Add bloom for neon glow effect
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(viewport.width, viewport.height),
-    8, // bloom strength
+    9, // bloom strength
     0.5, // bloom radius
     0.0 // bloom threshold
   );
   composer.addPass(bloomPass);
 
   const controls = new OrbitControls(camera, canvas.value);
+  controls.autoRotate = true;
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
-  controls.rotateSpeed = 1;
+  controls.autoRotateSpeed = 0.025;
   controls.zoomSpeed = 1.5;
   controls.minDistance = 1;
-  controls.maxDistance = 5;
+  controls.maxDistance = 15;
   controls.enablePan = true;
+
+  // Store base transform data for efficient updates
+  let pillarBaseData: any = [];
+  let populationMesh: any = createPopulationPillars();
 
   function destroy() {
     controls?.dispose();
@@ -197,8 +207,8 @@ export function initGlobe({ canvas, viewport }: any) {
     globe?.material?.dispose();
     borders?.geometry?.dispose();
     borders?.material?.dispose();
-    populationPillars?.geometry?.dispose();
-    populationPillars?.material?.dispose();
+    populationMesh?.geometry?.dispose();
+    populationMesh?.material?.dispose();
   }
 
   function tick() {
@@ -241,54 +251,63 @@ export function initGlobe({ canvas, viewport }: any) {
     return point;
   }
 
-  // Create population pillars using instanced rendering
+  // Create population pillars with stored base data
   function createPopulationPillars() {
-    // Base geometry for pillars (simple box for performance)
-    const geometry = new THREE.BoxGeometry(0.005, 15, 0.005);
-    // Move pivot to bottom of box
-    geometry.translate(0, 0.5, 0);
+    const geometry = new THREE.BoxGeometry(0.0005, 5, 0.0005); // Use unit height
+    // geometry.translate(0, -2.5, 0); // Move pivot to bottom
 
-    // Create instanced mesh
     const material = new THREE.MeshBasicMaterial({
       color: THEME_COLORS[4],
       transparent: true,
-      opacity: 0.1,
+      opacity: 1,
     });
 
     const count = population.length;
     const mesh = new THREE.InstancedMesh(geometry, material, count);
 
-    // Temporary objects for calculations
+    // Clear and rebuild base data
+    pillarBaseData = [];
+
     const dummy = new THREE.Object3D();
     const color = new THREE.Color();
 
-    // Process each population data point
-    population.forEach((item: any, i: number) => {
+    population.forEach((item, i) => {
       const [lat, lon] = item.coords.map(parseFloat);
-      const pop = item.population;
+      const pop = item.users;
 
       // Get position on globe
       const position = latLonToVector3(lat, lon, 1);
       dummy.position.copy(position);
 
       // Point outward from globe center
-      dummy.lookAt(position.clone().multiplyScalar(10));
-      dummy.rotateX(-Math.PI / 2); // Adjust rotation for box orientation
+      dummy.lookAt(position.clone().multiplyScalar(2));
+      dummy.rotateX(-Math.PI / 2);
 
-      // Scale based on population (log scale for better visualization)
-      dummy.scale.set(Math.log(pop) * 0.5, Math.log(pop) * 0.01, Math.log(pop) * 0.1);
+      // Store base transform data (without height scaling)
+      const baseScale = Math.log(pop) * 0.25;
+      dummy.scale.set(baseScale, 1, baseScale); // Y=1 for unit height
 
-      // Update instance matrix
+      dummy.updateMatrix();
+
+      // Store the base matrix and initial height
+      pillarBaseData.push({
+        baseMatrix: dummy.matrix.clone(),
+        baseScale: baseScale,
+        initialHeight: Math.log(pop) * 0.5,
+        currentHeight: Math.log(pop) * 0.5,
+      });
+
+      // Set initial matrix with proper height
+      dummy.scale.y = Math.log(pop) * 0.05;
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
 
-      // Color based on population intensity
+      // Set color
       const intensity = pop;
-      color.setHSL(0.5 - intensity * 0.5, 11, 0.195); // Cyan to red gradient
+      color.setHSL(0.5 - intensity * 0.2, 10, 0.13);
       mesh.setColorAt(i, color);
     });
 
-    // Update instance attributes
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
 
@@ -296,8 +315,78 @@ export function initGlobe({ canvas, viewport }: any) {
     return mesh;
   }
 
-  const populationPillars = createPopulationPillars();
-  console.log(`Created ${population.length} population pillars`);
+  function updatePillarHeights(heightMultipliers: any, options = {} as any) {
+    if (!populationMesh || !pillarBaseData.length) return;
+
+    const {
+      batchSize = Infinity, // Process all by default
+      startIndex = 0,
+      animate = false,
+      animationSpeed = 0.1,
+    } = options;
+
+    const endIndex = Math.min(startIndex + batchSize, pillarBaseData.length);
+    let hasChanges = false;
+
+    for (let i = startIndex; i < endIndex; i++) {
+      const data = pillarBaseData[i];
+      const targetHeight = data.initialHeight * (Array.isArray(heightMultipliers) ? heightMultipliers?.[i] : typeof heightMultipliers === "number" ? heightMultipliers : 1);
+
+      // Smooth animation if requested
+      if (animate) {
+        const diff = targetHeight - data.currentHeight;
+        if (Math.abs(diff) > 0.001) {
+          data.currentHeight += diff * animationSpeed;
+          hasChanges = true;
+        }
+      } else {
+        if (data.currentHeight !== targetHeight) {
+          data.currentHeight = targetHeight;
+          hasChanges = true;
+        }
+      }
+
+      // Update matrix efficiently by modifying the base matrix
+      const matrix = data.baseMatrix.clone();
+
+      // Scale the Y component (height) - matrix elements [5] is scaleY in a 4x4 matrix
+      matrix.elements[5] = data.currentHeight;
+
+      populationMesh.setMatrixAt(i, matrix);
+    }
+
+    // Only trigger update if there were actual changes
+    if (hasChanges) {
+      populationMesh.instanceMatrix.needsUpdate = true;
+    }
+
+    return endIndex < pillarBaseData.length; // Return true if more batches needed
+  }
+
+  // Alternative: Direct matrix manipulation for maximum performance
+  function updatePillarHeightsDirect(heightMultipliers: any) {
+    if (!populationMesh || !pillarBaseData.length) return;
+
+    const matrices = populationMesh.instanceMatrix.array;
+    let hasChanges = false;
+
+    for (let i = 0; i < pillarBaseData.length; i++) {
+      const data = pillarBaseData[i];
+      const targetHeight = data.initialHeight * (Array.isArray(heightMultipliers) ? heightMultipliers?.[i] : typeof heightMultipliers === "number" ? heightMultipliers : 1);
+
+      if (data.currentHeight !== targetHeight) {
+        data.currentHeight = targetHeight;
+
+        // Directly modify the matrix array (16 elements per matrix, element 5 is scaleY)
+        matrices[i * 16 + 5] = targetHeight;
+        hasChanges = true;
+      }
+    }
+
+    if (hasChanges) {
+      populationMesh.instanceMatrix.needsUpdate = true;
+    }
+  }
 
   return {
     ctx,
@@ -306,7 +395,6 @@ export function initGlobe({ canvas, viewport }: any) {
     scene,
     globe,
     borders,
-    // directionalLight,
     controls,
     composer,
     destroy,
@@ -316,6 +404,9 @@ export function initGlobe({ canvas, viewport }: any) {
     addMarker,
     addPoint,
     latLonToVector3,
+    populationMesh,
+    updatePillarHeightsDirect,
+    updatePillarHeights,
   };
 }
 

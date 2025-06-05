@@ -1,11 +1,13 @@
-import { onMounted, ref, computed, watch, type Ref, onUnmounted, nextTick, type Reactive, reactive } from "vue";
+import { onMounted, ref, computed, watch, type Ref, onUnmounted, nextTick, type Reactive, reactive, type ComputedRef } from "vue";
 import type { ZoomTransform } from "d3-zoom";
 
-export type Artboard = Ref<{
-  width: number;
-  height: number;
-  dpr: number;
-}>;
+export type Artboard =
+  | Ref
+  | ComputedRef<{
+      width: number;
+      height: number;
+      dpr: number;
+    }>;
 
 export type CanvasState = {
   ctx: CanvasRenderingContext2D | null;

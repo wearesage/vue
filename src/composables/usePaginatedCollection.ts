@@ -4,7 +4,7 @@ export function usePaginatedCollection(items: Ref<unknown[]>, total: number = 6)
   const index = ref(0);
 
   const visible = computed(() => {
-    const visible: unknown[] = [];
+    const visible: any[] = [];
     for (let j = index.value; j < index.value + total; j++) {
       const item: any = items.value?.[j];
       if (item) visible.push(item);

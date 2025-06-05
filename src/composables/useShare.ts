@@ -1,6 +1,6 @@
-import { useToast } from "../stores/toast";
-import { useClipboard } from "@vueuse/core";
 import { ref } from "vue";
+import { useClipboard } from "@vueuse/core";
+import { useToast } from "../stores/toast";
 
 export function useShare() {
   const toast = useToast();

@@ -1,0 +1,66 @@
+@use "../mixins" as *;
+@use "../theme" as *;
+
+@import url("https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=League+Spartan:wght@100..900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap");
+
+@include reset;
+
+html {
+  @each $name, $color in $color-map {
+    --#{$name}: #{$color};
+  }
+
+  --transition-duration: #{$transition-duration};
+  --transition-easing: #{$transition-easing};
+  --transition: #{$transition};
+  --hover-transition-duration: #{$hover-transition-duration};
+  --hover-transition-easing: #{$hover-transition-easing};
+  --hover-transition: #{$hover-transition};
+  --element-size: 4rem;
+  --primary-color: var(--pink);
+}
+
+html,
+body {
+  @include size(100%);
+  overflow: hidden;
+}
+
+body {
+  font-family: "Space Mono", monospace;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 0.8rem;
+  background-color: lighten($black, 2.5%);
+  color: var(--white);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Major Mono Display";
+  font-weight: normal;
+  font-style: normal;
+}
+
+h2 {
+  @include flex-row(end, center);
+  @include gap;
+  border-radius: 3rem;
+  width: 100%;
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.no-cursor {
+  cursor: none;
+}
+
+@import "./keyframes.scss";
+@import "./transitions.scss";
+@import "./codemirror.scss";

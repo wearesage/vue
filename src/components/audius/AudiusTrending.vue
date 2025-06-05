@@ -10,6 +10,9 @@
 </template>
 
 <script setup lang="ts">
+import Row from "../layout/Row.vue";
+import Column from "../layout/Column.vue";
+import AudiusArtwork from "./AudiusArtwork.vue";
 import { useAudius } from "../../stores/audius";
 
 defineProps<{

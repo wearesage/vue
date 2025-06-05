@@ -1,22 +1,10 @@
 <template>
-  <Column
-    class="input container"
-    :class="{ [type]: true }">
-    <Row
-      class="label-row"
-      v-if="label || type === 'range'">
+  <Column class="input container" :class="{ [type]: true }">
+    <Row class="label-row" v-if="label || type === 'range'">
       <label v-if="label">{{ label }}</label>
-      <Row
-        class="number"
-        v-if="type === 'range'">
+      <Row class="number" v-if="type === 'range'">
         <span v-if="currency">$</span>
-        <NumberFlow
-          :min="min"
-          :step="step"
-          :max="max"
-          :name="name"
-          :value="model"
-          @input="onInput" />
+        <NumberFlow :min="min" :step="step" :max="max" :name="name" :value="model" @input="onInput" />
       </Row>
     </Row>
     <input
@@ -41,7 +29,10 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted, nextTick } from "vue";
 import NumberFlow from "@number-flow/vue";
+import Column from "../layout/Column.vue";
+import Row from "../layout/Row.vue";
 
 const {
   type,
@@ -53,7 +44,7 @@ const {
   step,
   autofocus = undefined
 } = defineProps<{
-  type: FormInputType;
+  type: string;
   name?: string;
   row?: boolean;
   placeholder?: string;
@@ -97,10 +88,9 @@ function onBlur(e: any) {
   }
 }
 
-onMounted(async () => {
+onMounted(() => {
   if (!autofocus) return;
-  await nextTick();
-  input.value?.focus();
+  nextTick().then(() => input.value?.focus());
 });
 </script>
 

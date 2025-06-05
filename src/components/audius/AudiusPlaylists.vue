@@ -13,6 +13,9 @@
 </template>
 
 <script setup lang="ts">
+import Row from "../layout/Row.vue";
+import AudiusArtwork from "./AudiusArtwork.vue";
+
 withDefaults(
   defineProps<{
     playlists: any[];

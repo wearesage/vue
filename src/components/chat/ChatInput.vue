@@ -6,8 +6,7 @@
           <span>New Chat</span>
         </button>
       </div>
-      <textarea placeholder="send a message" ref="textarea" :value="message" @input="onInput" @keydown="onKeyDown"
-        @focus="onFocus" @blur="onBlur" @keyup="onKeyUp" />
+      <textarea placeholder="send a message" ref="textarea" :value="message" @input="onInput" @keydown="onKeyDown" @focus="onFocus" @blur="onBlur" @keyup="onKeyUp" />
       <button class="plus send" :disabled="!message.length">
         <SendSVG />
       </button>
@@ -23,91 +22,97 @@
 </template>
 
 <script setup lang="ts">
-import FileSVG from '../../assets/icons/plus.svg'
-import SendSVG from '../../assets/icons/send-up.svg'
+import { ref, watch, onMounted, nextTick } from "vue";
+import { onClickOutside } from "@vueuse/core";
+import ChatFiles from "./ChatFiles.vue";
+import FileSVG from "../../assets/icons/plus.svg";
+import SendSVG from "../../assets/icons/send-up.svg";
 
-const message = ref('')
+const message = ref("");
 const shift = ref(false);
 const textarea = ref();
 const focused = ref(false);
 const showActions = ref(false);
-const actions = ref('actions')
+const actions = ref("actions");
 
 onClickOutside(actions as any, () => {
-  showActions.value = false
-})
+  showActions.value = false;
+});
 
 function onFocus() {
-  focused.value = true
+  focused.value = true;
 }
 
 function onBlur() {
-  focused.value = false
+  focused.value = false;
 }
 
 const props = defineProps<{
   files: any;
   messages: any[];
-}>()
+}>();
 
-watch(() => props.messages, (val: any) => {
-  if (!val.length) {
-    showActions.value = false
-    textarea.value?.focus?.()
+watch(
+  () => props.messages,
+  (val: any) => {
+    if (!val.length) {
+      showActions.value = false;
+      textarea.value?.focus?.();
+    }
   }
-})
+);
 
-const $emit = defineEmits(['submit', 'remove', 'new-chat'])
+const $emit = defineEmits(["submit", "remove", "new-chat"]);
 
 function submit() {
-  $emit('submit', message.value)
-  message.value = ''
+  $emit("submit", message.value);
+  message.value = "";
 }
 
 function onInput({ target }: any) {
   if (target.value.length === 0) {
-    target.style.height = '3.75rem';
-    return
+    target.style.height = "3.75rem";
+    return;
   }
 
   target.style.height = "5px";
-  target.style.height = (target.scrollHeight) + "px";
-  message.value = target.value
+  target.style.height = target.scrollHeight + "px";
+  message.value = target.value;
 }
 
 function actionClick() {
-  showActions.value = true
+  showActions.value = true;
 }
 
 async function onKeyDown(e: any) {
-  if (e.key === 'Shift') {
-    shift.value = true
+  if (e.key === "Shift") {
+    shift.value = true;
   }
 
-  if (!shift.value && e.key === 'Enter') {
-    e.preventDefault()
-    submit()
-    await nextTick()
+  if (!shift.value && e.key === "Enter") {
+    e.preventDefault();
+    submit();
+    await nextTick();
     if (e.target.value.length === 0) {
-      e.target.style.height = '3.75rem';
-      return
+      e.target.style.height = "3.75rem";
+      return;
     }
   }
 }
 
 function onKeyUp({ key }: any) {
-  if (key === 'Shift') {
-    shift.value = false
+  if (key === "Shift") {
+    shift.value = false;
   }
 }
 
 onMounted(() => {
-  textarea.value.focus()
-})
+  textarea.value.focus();
+});
 </script>
 
 <style lang="scss" scoped>
-$border: 1px solid rgba($white, .25);
+$border: 1px solid rgba($white, 0.25);
 
 section {
   @include position(absolute, null 0 0 0, 100);
@@ -118,7 +123,7 @@ section {
   transition: var(--base-transition);
 
   &:hover {
-    border-color: rgba($white, .05);
+    border-color: rgba($white, 0.05);
   }
 
   .row {
@@ -132,14 +137,14 @@ section {
   }
 
   &.focused {
-    border-color: rgba($pink, .25);
+    border-color: rgba($pink, 0.25);
 
     .row {
       // background: lighten($black, 5%);
     }
 
     .row textarea {
-        min-width: 500px;
+      min-width: 500px;
     }
   }
 }
@@ -155,23 +160,23 @@ textarea {
   height: 3.75rem;
   color: var(--white);
   min-width: 200px;
-  transition: all .75s $transition-easing !important;
+  transition: all 0.75s $transition-easing !important;
 
   &::placeholder {
-    color: rgba($white, .25);
+    color: rgba($white, 0.25);
   }
 }
 
 .plus {
   @include size(2.25rem, 2.75rem);
-  @include box(.5);
-  margin: .5rem 1rem .5rem 0;
+  @include box(0.5);
+  margin: 0.5rem 1rem 0.5rem 0;
   border-radius: 100%;
   transition: $hover-transition;
   margin-bottom: auto;
 
   &:first-of-type {
-    margin: .5rem 0;
+    margin: 0.5rem 0;
   }
 
   &:hover:not([disabled]) {
@@ -179,7 +184,7 @@ textarea {
     transition-duration: 150ms;
 
     &:active {
-      transform: scale(.9);
+      transform: scale(0.9);
     }
   }
 
@@ -189,7 +194,7 @@ textarea {
 
   &[disabled],
   &.send[disabled] {
-    opacity: .3;
+    opacity: 0.3;
     cursor: not-allowed;
   }
 
@@ -208,7 +213,6 @@ textarea {
   }
 
   &.active {
-
     &:hover,
     &:active {
       opacity: 1;
@@ -237,7 +241,7 @@ textarea {
     border-radius: 3rem;
 
     &[disabled] {
-      opacity: .3;
+      opacity: 0.3;
       cursor: not-allowed;
     }
 
@@ -249,7 +253,7 @@ textarea {
     }
 
     p {
-      opacity: .25;
+      opacity: 0.25;
     }
   }
 }

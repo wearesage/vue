@@ -7,6 +7,8 @@
 </template>
 
 <script setup lang="ts">
+import Vinyl from "../common/Vinyl.vue";
+
 withDefaults(
   defineProps<{
     playing?: boolean;

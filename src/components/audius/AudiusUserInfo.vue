@@ -10,6 +10,9 @@
 </template>
 
 <script lang="ts" setup>
+import Column from "../layout/Column.vue";
+import AudiusUserSocials from "./AudiusUserSocials.vue";
+
 defineProps<{ user: any }>();
 </script>
 

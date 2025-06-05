@@ -12,7 +12,7 @@ export function useDropMultipleFiles(el: Ref<HTMLElement>) {
     () => files.value,
     async () => {
       if (!files.value) return;
-      base64.value = []
+      base64.value = [];
       files.value.forEach(async (file: any, i: number) => {
         base64.value[i] = await imageToBase64(file);
       });
