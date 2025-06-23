@@ -22,19 +22,15 @@ defineProps<{
 
 <style lang="scss" scoped>
 .play {
-  @include position(absolute, 50% null null 50%, 1000);
-  @include size(5rem);
+  @include size(4rem);
   @include flex;
-  padding: 1.5rem;
-  backdrop-filter: blur(2rem);
-  background: $black;
+  position: relative;
   border-radius: 5rem;
-  transform: translateX(-50%) translateY(-50%);
   transition: $hover-transition;
-  border: 1px solid $purple;
+  border: 0.1rem solid rgba($white, 1);
 
   svg {
-    @include size(30%);
+    @include size(40%);
     position: absolute;
   }
 
@@ -44,11 +40,12 @@ defineProps<{
 
   &:hover {
     opacity: 1;
-    transform: translateX(-50%) translateY(-50%) scale(1.05);
+    transform: scale(1.05);
+    border-color: transparent;
   }
 
   &:active {
-    transform: translateX(-50%) translateY(-50%) scale(0.95);
+    transform: scale(0.95);
   }
 }
 </style>

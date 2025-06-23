@@ -1,9 +1,7 @@
-import { ref, computed, watch, type Ref, watchEffect, watchSyncEffect } from "vue";
-import type { ShaderProps } from "@/components/shaders/Shader.vue";
+import { ref, computed, watch, type Ref, onMounted, shallowRef } from "vue";
 import * as glslUtil from "../constants/glsl-util";
 import { DEFAULT_FRAGMENT_SHADER, DEFAULT_VERTEX_SHADER } from "../constants/glsl-defaults";
-import { useViewport } from "../stores/viewport";
-import { useAnimation } from "./useAnimation";
+import { useViewport } from "../stores";
 
 const utils =
   Object.keys(glslUtil).reduce((acc: string, key: string) => {
@@ -14,9 +12,24 @@ export type Uniform = {
   value: Number | Boolean | [Number, Number] | [Number, Number, Number];
 };
 
-export function useShader(props: ShaderProps, mesh: Ref<any>) {
+export function useShader(
+  props: {
+    shader: string;
+    uniforms: Record<string, { value: unknown }>;
+    width?: number;
+    height?: number;
+    dpr?: number;
+    animate?: boolean;
+    volume?: number;
+    stream?: number;
+    fixed?: boolean;
+    time?: number;
+    renderMode?: "always" | "manual" | "on-demand";
+  },
+  mesh: Ref<any>
+) {
   const viewport = useViewport();
-  const uniforms = ref<any>({});
+  const uniforms = shallowRef<any>({});
   const fragmentShader = ref("");
   const vertexShader = ref("");
   const defs = ["precision highp float;", "#define PI 3.14159265359", "#define TWO_PI 2. * PI", "varying vec2 vUv;"].join("\n");
@@ -24,6 +37,7 @@ export function useShader(props: ShaderProps, mesh: Ref<any>) {
   const height = computed(() => props.height || viewport.height);
   const dpr = computed(() => props.dpr || viewport.dpr);
   const aspectRatio = computed(() => width.value / height.value);
+  const initialized = ref(false);
   const artboard = computed(() => ({
     width: `${width.value}px`,
     height: `${height.value}px`,
@@ -47,10 +61,21 @@ export function useShader(props: ShaderProps, mesh: Ref<any>) {
       },
 
       ...(props.uniforms || {}),
+
+      ...Object.keys(props.uniforms).reduce((acc: Record<string, any>, key) => {
+        if (typeof props.uniforms[key].value === "boolean") {
+          acc[`${key}Tween`] = { value: false };
+          acc[`${key}TweenProgress`] = { value: 0 };
+        }
+        return acc;
+      }, {}),
     };
+
+    initialized.value = true;
   }
 
   function setInternalUniforms(now: DOMHighResTimeStamp) {
+    if (initialized.value === false) initializeUniforms();
     const width = props.width || viewport.width;
     const height = props.height || viewport.height;
     const dpr = props.dpr || viewport.dpr;
@@ -63,7 +88,7 @@ export function useShader(props: ShaderProps, mesh: Ref<any>) {
 
   function setExternalUniforms() {
     Object.keys(props.uniforms).forEach((key) => {
-      if (!uniforms.value[key]?.value) return;
+      if (typeof uniforms.value[key]?.value === "undefined") return;
       uniforms.value[key].value = props.uniforms[key].value;
     });
   }
@@ -83,7 +108,7 @@ export function useShader(props: ShaderProps, mesh: Ref<any>) {
       }
 
       if (typeof (uniforms.value as any)?.[key]?.value === "boolean") {
-        return acc + `\nuniform bool ${key};\nuniform bool ${key}Tween;\nuniform float ${key}TweenProgress;`;
+        return acc + `\nuniform bool ${key};`;
       }
 
       return acc;
@@ -92,48 +117,45 @@ export function useShader(props: ShaderProps, mesh: Ref<any>) {
 
   function buildVertexShader(declarations: string) {
     if (mesh.value && mesh.value.material && vertexShader.value !== defs + declarations + DEFAULT_VERTEX_SHADER) {
-      vertexShader.value = defs + declarations + DEFAULT_VERTEX_SHADER;
-      mesh.value.material.vertexShader = vertexShader.value;
-      mesh.value.material.needsUpdate = true;
+      try {
+        vertexShader.value = defs + declarations + DEFAULT_VERTEX_SHADER;
+        mesh.value.material.vertexShader = vertexShader.value;
+        mesh.value.material.needsUpdate = true;
+      } catch (e) {
+        console.log(e);
+      }
     }
   }
 
   function buildFragmentShader(declarations: string) {
     if (mesh.value && mesh.value.material && (defs + declarations + utils + props.shader || "") !== fragmentShader.value) {
-      fragmentShader.value = defs + declarations + utils + (props.shader || DEFAULT_FRAGMENT_SHADER);
-      mesh.value.material.fragmentShader = fragmentShader.value;
-      mesh.value.material.needsUpdate = true;
+      try {
+        fragmentShader.value = defs + declarations + utils + (props.shader || DEFAULT_FRAGMENT_SHADER);
+        mesh.value.material.fragmentShader = fragmentShader.value;
+        mesh.value.material.needsUpdate = true;
+      } catch (e) {
+        console.log(e);
+      }
     }
   }
 
   function render(now: DOMHighResTimeStamp) {
-    setInternalUniforms(now);
-    setExternalUniforms();
-    const declarations = buildUniformDeclarations();
-    buildVertexShader(declarations);
-    buildFragmentShader(declarations);
+    try {
+      setInternalUniforms(now);
+      setExternalUniforms();
+      const declarations = buildUniformDeclarations();
+      buildVertexShader(declarations);
+      buildFragmentShader(declarations);
+    } catch (e) {
+      console.log(e);
+    }
   }
-
-  const { start, stop } = useAnimation(({ now }) => {
-    render(now);
-  }, false);
 
   function update() {
     if (!mesh.value) return;
     initializeUniforms();
     mesh.value.material.needsUpdate = true;
   }
-
-  watch(
-    () => props.animate,
-    (val) => {
-      if (!val) {
-        stop();
-      } else {
-        start();
-      }
-    }
-  );
 
   watch(
     () => props.shader,
@@ -145,16 +167,9 @@ export function useShader(props: ShaderProps, mesh: Ref<any>) {
     () => update()
   );
 
-  watchSyncEffect((onCleanup) => {
+  onMounted(() => {
     initializeUniforms();
-
-    if (props.animate) {
-      start();
-    } else {
-      render(Math.random() * 99999999);
-    }
-
-    onCleanup(() => stop());
+    render(window.performance.now());
   });
 
   return {

@@ -1,4 +1,4 @@
-interface Particle {
+export interface Particle {
   x: number;
   y: number;
   vx: number;
@@ -12,11 +12,7 @@ interface Particle {
 export function useParticleSystem(maxParticles = 500) {
   const particles: Particle[] = [];
 
-  function createParticle(
-    x: number,
-    y: number,
-    options: Partial<Particle> = {}
-  ) {
+  function createParticle(x: number, y: number, options: Partial<Particle> = {}) {
     if (particles.length >= maxParticles) return;
 
     const particle: Particle = {
@@ -70,9 +66,7 @@ export function useParticleSystem(maxParticles = 500) {
   function render(drawFunc: (props: any) => void) {
     for (const p of particles) {
       const alpha = p.life;
-      const color = p.color.includes("hsla")
-        ? p.color
-        : p.color.replace("hsl", "hsla").replace(")", `, ${alpha})`);
+      const color = p.color.includes("hsla") ? p.color : p.color.replace("hsl", "hsla").replace(")", `, ${alpha})`);
 
       drawFunc({
         x: p.x,

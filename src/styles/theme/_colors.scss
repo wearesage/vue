@@ -1,16 +1,18 @@
 $pink: #f22d85;
 $red: #e64646;
 $yellow: #ffce51;
-$orange: #ff924f;
+$tan: #dcb08b;
+$orange: #ff7925;
 $purple: #b85bff;
+$light-purple: #ab82c3;
 $green: #65dca6;
 $blue: #3f87e6;
 $teal: #4696d8;
 $ice: #2093f0;
 $black: #13131b;
-$light-gray: #dad7db;
-$gray: #847c85;
-$dark-gray: #312e32;
+$light-gray: #75759c;
+$gray: #4e4e61;
+$dark-gray: #2c2c36;
 $white: #e7e7e7;
 
 $color-map: (
@@ -29,4 +31,5 @@ $color-map: (
   "gray": $gray,
   "dark-gray": $dark-gray,
   "white": $white,
+  "light-purple": $light-purple,
 );

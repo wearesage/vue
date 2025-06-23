@@ -54,6 +54,35 @@ vec2 k_swap(vec2 uv, vec2 uv2, bool val, bool valTween, float valTweenProgress) 
 }
 `;
 
+export const k_sphere = /*glsl */ `
+vec2 k_sphere (vec3 pos) {
+  // Convert to spherical coordinates
+  float theta = atan(pos.z, pos.x);  // longitude
+  float phi = acos(pos.y);           // latitude
+  
+  // Map to UV space [0,1]
+  float u = (theta + PI) / (2.0 * PI);  // longitude: -π to π → 0 to 1
+  float v = phi / PI;                    // latitude: 0 to π → 0 to 1
+  
+  return vec2(u, v);
+}
+`;
+
+export const k_uv_to_sphere = /* glsl */ `
+vec3 k_uv_to_sphere(vec2 uv) {
+  // Convert UV coordinates to spherical coordinates
+  float theta = uv.x * TWO_PI;  // longitude: 0 to 1 → 0 to 2π
+  float phi = uv.y * PI;        // latitude: 0 to 1 → 0 to π
+  
+  // Convert spherical to cartesian coordinates
+  float x = sin(phi) * cos(theta);
+  float y = cos(phi);
+  float z = sin(phi) * sin(theta);
+  
+  return vec3(x, y, z);
+}
+`;
+
 export const k_uv = /* glsl */ `
 vec2 k_uv() {
   vec2 uv = 2.0 * vUv - 1.0;

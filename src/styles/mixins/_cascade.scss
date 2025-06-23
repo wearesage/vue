@@ -1,9 +1,20 @@
-@mixin cascade($count: 10, $delay: 20ms, $init: 0ms, $animation-name: fade-up-scale) {
+@mixin cascade($count: 50, $delay: 10ms, $init: 0ms, $animation-name: fade-up-scale) {
   @for $i from 1 through $count {
     &:nth-child(#{$i}) {
+      will-change: transform, opacity;
       opacity: 0;
-      animation: $animation-name 500ms var(--transition-easing) forwards;
+      animation: $animation-name 400ms var(--transition-easing) forwards;
       animation-delay: #{($init + (($i - 1) * $delay))};
+    }
+  }
+}
+
+@mixin force-cascade($count: 50, $delay: 10ms, $init: 0ms, $animation-name: fade-up-scale) {
+  @for $i from 1 through $count {
+    &:nth-child(#{$i}) {
+      will-change: transform, opacity;
+      animation: $animation-name 400ms var(--transition-easing) forwards !important;
+      animation-delay: #{($init + (($i - 1) * $delay))} !important;
     }
   }
 }

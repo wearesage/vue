@@ -1,4 +1,4 @@
-import { k_hue, k_kale, k_orb, k_rainbow, k_rotate2d, k_swap, k_uv } from './glsl-util';
+import { k_hue, k_kale, k_orb, k_rainbow, k_rotate2d, k_swap, k_uv, k_sphere, k_uv_to_sphere } from "./glsl-util";
 
 export const DEFAULT_VERTEX_SHADER = /*glsl*/ `void main() {
   vUv = uv;
@@ -21,11 +21,11 @@ export const RAW_UTILS = {
   k_rotate2d,
   k_swap,
   k_uv,
+  k_sphere,
+  k_uv_to_sphere,
 } as any;
 
-export const GLSL_UTILS = Object.keys(RAW_UTILS)
-  .reduce((acc: string, key: string) => {
-    acc += `${RAW_UTILS[key]}`;
-    return acc;
-  }, '\n')
-  .trim() as any;
+export const GLSL_UTILS = Object.keys(RAW_UTILS).reduce((acc: string, key: string) => {
+  acc += `${RAW_UTILS[key]}`;
+  return acc;
+}, "\n");

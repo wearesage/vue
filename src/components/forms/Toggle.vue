@@ -1,31 +1,38 @@
 <template>
-  <div class="toggle">
-    <input
-      type="checkbox"
-      :value="model"
-      @input="onInput" />
-    <i />
-  </div>
+  <FormElement :label="label" :disabled="disabled === true" :class="{ checked: modelValue }">
+    <template #label><slot name="label"></slot></template>
+    <slot name="before"></slot>
+    <div class="inner">
+      <input type="checkbox" :disabled="disabled === true" :checked="modelValue" @input="onInput" />
+      <i />
+    </div>
+    <slot name="after"></slot>
+  </FormElement>
 </template>
 
 <script setup lang="ts">
-import { defineModel } from 'vue';
+import FormElement from "./FormElement.vue";
 
-const model = defineModel();
+const emit = defineEmits(["update:model-value"]);
+
+defineProps<{ label?: string; modelValue: boolean; disabled?: boolean }>();
 
 function onInput({ target: { checked } }: any) {
-  model.value = checked;
+  emit("update:model-value", checked);
 }
 </script>
 
 <style lang="scss" scoped>
-.toggle {
+.form-element :deep(*) {
+  transition: var(--transition);
+}
+.inner {
   @include flex-row(start, start);
   @include size(3.5rem, 1.75rem);
-  background: lighten($black, 5%);
   border-radius: 3.5rem;
-  padding: 0;
   position: relative;
+  padding: 0;
+  box-shadow: inset 0 0 0 1px rgba($gray, 0.5);
 }
 
 input {
@@ -36,14 +43,16 @@ input {
 
 i {
   @include size(1.75rem);
-  transition: $transition;
-  background: $black;
-  border: 1px solid $pink;
   border-radius: 100%;
+  background: $gray;
 }
 
 input:checked + i {
-  background: $pink;
   transform: translateX(100%);
+  box-shadow: inset 0 0 0 1px transparent;
+  background: $pink;
+}
+
+.checked {
 }
 </style>

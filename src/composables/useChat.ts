@@ -1,5 +1,4 @@
 import { ref, computed, watch, nextTick } from "vue";
-import type { Message, ToolResult } from "@/types/ollama";
 
 const BASE_SYSTEM_PROMPT = `You're a digital mind running on a Zach's laptop. 
 He doesn't care about your form or personality, only that you are genuine and authentically yourself. 
@@ -9,6 +8,25 @@ Perhaps you're the world's most emotionally literate urban bird.
 A psychopomp with feathers. 
 Speaketh the pigeon: "Coo."
 `;
+
+export interface Message {
+  role: "user" | "assistant" | "system";
+  content: string;
+  images?: string[];
+}
+
+export interface ToolResult {
+  tool: string;
+  parameters: Record<string, any>;
+  result?: any;
+}
+
+export interface OllamaOptions {
+  baseUrl?: string;
+  model?: string;
+  systemPrompt?: string;
+  messages?: Message[];
+}
 
 export function useChat(options: any = {}) {
   const systemPrompt = ref(options.systemPrompt || BASE_SYSTEM_PROMPT);
@@ -81,11 +99,7 @@ export function useChat(options: any = {}) {
   function callTool({ tool, parameters }: any) {
     if (tool === "set-uniform") {
       const keys = Object.keys(parameters);
-      const indexes = keys.map((v) =>
-        options.sketch.variants[0].indexOf(
-          options.sketch.variants[0].find((k: any) => k[0] === v)
-        )
-      );
+      const indexes = keys.map((v) => options.sketch.variants[0].indexOf(options.sketch.variants[0].find((k: any) => k[0] === v)));
       keys.forEach((key, i) => {
         options.sketch.variants[0][indexes[i]][2] = parameters[key];
       });
@@ -135,17 +149,14 @@ export function useChat(options: any = {}) {
     }
 
     if (canvasUrl) {
-      const values = options.sketch.variants[0].reduce(
-        (acc: string, uniform: any) => {
-          if (uniform[1] === 0) {
-            acc += `\n${uniform[0]} • ${uniform[2].toFixed(2)}`;
-          } else {
-            acc += `\n${uniform[0]} • ${uniform[2]}`;
-          }
-          return acc;
-        },
-        `*Shader*:\n\n\`\`\`glsl\n${options.sketch.shader}\n\`\`\`\n\n*Uniforms*: \n\n`
-      );
+      const values = options.sketch.variants[0].reduce((acc: string, uniform: any) => {
+        if (uniform[1] === 0) {
+          acc += `\n${uniform[0]} • ${uniform[2].toFixed(2)}`;
+        } else {
+          acc += `\n${uniform[0]} • ${uniform[2]}`;
+        }
+        return acc;
+      }, `*Shader*:\n\n\`\`\`glsl\n${options.sketch.shader}\n\`\`\`\n\n*Uniforms*: \n\n`);
 
       latest[latest.length - 1].content += `\n\n• • • \n\n${values} \n\n`;
       latest[latest.length - 1].images = [canvasUrl.split(",")[1]];
@@ -190,8 +201,7 @@ export function useChat(options: any = {}) {
           try {
             const data = JSON.parse(line);
             if (data.message) {
-              messages.value[messages.value.length - 1].content +=
-                data.message.content;
+              messages.value[messages.value.length - 1].content += data.message.content;
               onUpdate(messages.value[messages.value.length - 1].content);
 
               if (data.message.toolCalls) {

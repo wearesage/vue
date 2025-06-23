@@ -1,23 +1,24 @@
-@use './size' as *;
-@use './dark' as *;
-@use './blur' as *;
-@use '../theme/colors'  as *;
+@use "./size" as *;
+@use "./dark" as *;
+@use "./blur" as *;
+@use "../theme/colors" as *;
 
 $thumb-size: 1.75rem;
-$track-size: .15rem;
+$track-size: 1px;
 
 @mixin thumb {
   @include size($thumb-size);
-  background: var(--black);
-  border: 1px solid var(--pink);
+  background: $gray;
+
   -webkit-appearance: none;
   border-radius: $thumb-size;
   transition: var(--hover-transition);
   cursor: pointer;
-  transform: translateY(-#{.75rem});
+  transform: translateY(-#{0.75rem});
 
   &:active {
-    transform: translateY(-#{.75rem}) scale(.9);
+    background: $pink;
+    transform: translateY(-#{0.75rem}) scale(0.75);
   }
 }
 
@@ -28,28 +29,28 @@ $track-size: .15rem;
   border-color: transparent;
   color: transparent;
   border-radius: $track-size;
-  background: lighten($black, 5%);
+  background: $dark-gray;
   // background: var(--light-gray);
 }
 
 @mixin range {
-  input[type='range'] {
+  input[type="range"] {
     -webkit-appearance: none;
   }
 
-  input[type='range']:focus {
+  input[type="range"]:focus {
     outline: none;
   }
 
-  input[type='range']::-moz-range-track {
+  input[type="range"]::-moz-range-track {
     @include track;
   }
 
-  input[type='range']::-webkit-slider-runnable-track {
+  input[type="range"]::-webkit-slider-runnable-track {
     @include track;
   }
 
-  input[type='range']::-webkit-slider-thumb {
+  input[type="range"]::-webkit-slider-thumb {
     @include thumb;
   }
 }

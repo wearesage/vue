@@ -16,7 +16,7 @@ const { centered = false, cascade = false } = defineProps<{
   cascade?: boolean;
 }>();
 
-const $emit = defineEmits(['wheel'])
+const $emit = defineEmits(["wheel"]);
 
 function onScroll(e: any) {
   localStorage.setItem(LS_KEY.value, `${e.target.scrollTop}`);

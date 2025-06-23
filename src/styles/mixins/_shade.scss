@@ -6,5 +6,6 @@
     content: "";
     background: linear-gradient($position, $col1, $col2);
     transition: var(--base-transition);
+    pointer-events: none;
   }
 }

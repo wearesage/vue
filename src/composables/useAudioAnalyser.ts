@@ -31,12 +31,9 @@ export function useAudioAnalyser() {
       instance?.value?.destroy?.();
       instance.value?.initialize({ element });
       raf.remove("audio");
-      raf.add(
-        {
-          tick,
-        },
-        "audio"
-      );
+      raf.add(tick, {
+        id: "audio",
+      });
       initialized.value = true;
     }
   }

@@ -6,10 +6,9 @@
 </template>
 
 <script setup lang="ts">
-// import { useToast } from "../../stores/toast";
+import { useToast } from "../../stores/toast";
 
-const toast = {};
-// const toast = useToast();
+const toast = useToast();
 </script>
 
 <style lang="scss" scoped>

@@ -1,37 +1,36 @@
-import { onMounted, onBeforeUnmount, ref } from "vue";
-import { useRAF } from "../stores/raf";
+import { onMounted, onBeforeUnmount, ref, computed } from "vue";
+import { useRAF, type Animation, AnimationTick } from "../stores/raf";
+import { v4 } from "uuid";
 
-export function useAnimation(tick: ({ now }: { now: DOMHighResTimeStamp }) => void, autoStart: boolean = true) {
+export function useAnimation(tick: AnimationTick, config: Partial<Animation> = {}) {
+  const generatedId = ref(v4());
+  const { autoStart, duration, id } = { autoStart: true, ...config };
+  const appliedId = computed(() => id ?? generatedId.value);
   const { add, remove } = useRAF();
-  const name = ref(`animation-${Math.floor(Math.random() * 100000000)}`);
 
   onMounted(() => {
     if (autoStart) {
-      add(
-        {
-          tick,
-        },
-        name.value
-      );
+      add(tick, {
+        id: appliedId.value,
+        duration,
+      });
     }
   });
 
   onBeforeUnmount(() => {
-    remove(name.value);
+    remove(appliedId.value);
   });
 
   return {
     start() {
-      add(
-        {
-          tick,
-        },
-        name.value
-      );
+      add(tick, {
+        id: appliedId.value,
+        duration,
+      });
     },
 
     stop() {
-      remove(name.value);
+      remove(appliedId.value);
     },
   };
 }

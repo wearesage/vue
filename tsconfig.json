@@ -1,35 +1,22 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
+    "target": "ES2022",
+    "module": "nodenext",
+    "moduleResolution": "NodeNext",
     "declaration": true,
     "declarationMap": true,
+    "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    },
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ]
+    "rootDir": "./",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true,
+    "jsx": "preserve"
   },
   "include": [
-    "src/**/*",
-    "src/data"
+    "**/*.ts",
+    "**/*.vue"
   ],
-  "exclude": [
-    "./node_modules",
-    "./src/assets"
-  ]
 }

@@ -1,6 +1,5 @@
 import { type Ref } from "vue";
-import type { OllamaOptions } from "@/types/ollama";
-import { useChat } from "./useChat";
+import { useChat, type OllamaOptions } from "./useChat";
 export function useOllama(options: OllamaOptions = {}, { files, base64, sketch, context }: { files: Ref<any[]>; base64: Ref<any[]>; sketch?: any; context?: any }) {
   const baseUrl = options.baseUrl || "http://localhost:11434/api/chat";
   const model = options.model || "gemma3:4b-it-qat";

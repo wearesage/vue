@@ -1,31 +1,43 @@
 <template>
-  <component class="column" v-bind="$attrs" :is="is" :class="{ center, cascade }">
+  <component
+    v-bind="$attrs"
+    class="column"
+    :is="is"
+    :class="{ center, cascade }">
     <slot />
   </component>
 </template>
 
 <script lang="ts" setup>
 import { computed } from "vue";
-const props = withDefaults(defineProps<{ cascade?: boolean; is?: string; center?: boolean; padding?: number | string | boolean; gap?: number | string | boolean; width?: number | string }>(), {
-  is: "div",
-  gap: 0,
-  padding: 0
-});
-const gapCss = computed(() => `${typeof props.gap === "boolean" && props.gap ? 1 : typeof props.gap === "number" ? props.gap : 0}rem`);
-const paddingCss = computed(() => `${typeof props.padding === "boolean" && props.padding ? 1 : typeof props.padding === "number" ? props.padding : 0}rem`);
-const widthCss = computed(() => (props.width ? props.width : "auto"));
+import { useTruthyNumber, useDimensionalStyleShorthand, useWithUnit } from "../../composables";
+import { type LayoutProps, DEFAULT_LAYOUT_PROPS } from "../../types/layout";
+
+const props = withDefaults(defineProps<LayoutProps>(), DEFAULT_LAYOUT_PROPS);
+const width = computed(() => (props.width ? props.width : "fit-content"));
+const height = computed(() => (props.height ? props.height : "fit-content"));
+const numericGap = useTruthyNumber(props.gap);
+const gap = useWithUnit(numericGap);
+const padding = useDimensionalStyleShorthand(props.padding);
 </script>
 
 <style lang="scss" scoped>
 .column {
-  @include flex-column(start, start);
-  gap: v-bind(gapCss);
-  padding: v-bind(paddingCss);
-  width: v-bind(widthCss);
+  display: flex;
+  flex-direction: column;
+  align-items: v-bind(align);
+  justify-content: v-bind(justify);
+  gap: v-bind(gap);
+  padding: v-bind(padding);
+  width: v-bind(width);
+  height: v-bind(height);
 }
 
 .center {
-  @include flex-column;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .cascade > * {

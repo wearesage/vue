@@ -17,6 +17,18 @@ export interface ChessPiece {
   hasMoved?: boolean;
 }
 
+export interface GameState {
+  pieces: ChessPiece[];
+  turn: PieceColor;
+  moveList: any[];
+  lastMove?: {
+    piece: ChessPiece;
+    from: Square;
+    to: Square;
+    captured?: ChessPiece;
+  };
+}
+
 export interface BoardState {
   pieces: ChessPiece[];
   selectedPiece: ChessPiece | null;
@@ -75,10 +87,10 @@ export function getSquareFromCoordinates(x: number, y: number, squareSize: numbe
   };
 }
 
-export function calculatePossibleMoves(pieces: ChessPiece[], piece: ChessPiece): Square[] {
+export function calculatePossibleMoves(pieces: ChessPiece[], piece: ChessPiece, gameState?: GameState): Square[] {
   switch (piece.type) {
     case "pawn":
-      return calculatePawnMoves(pieces, piece);
+      return calculatePawnMoves(pieces, piece, gameState);
     case "rook":
       return calculateRookMoves(pieces, piece);
     case "knight":
@@ -88,11 +100,11 @@ export function calculatePossibleMoves(pieces: ChessPiece[], piece: ChessPiece):
     case "queen":
       return calculateQueenMoves(pieces, piece);
     case "king":
-      return calculateKingMoves(pieces, piece);
+      return calculateKingMoves(pieces, piece, gameState);
   }
 }
 
-function calculatePawnMoves(pieces: ChessPiece[], piece: ChessPiece): Square[] {
+function calculatePawnMoves(pieces: ChessPiece[], piece: ChessPiece, gameState?: GameState): Square[] {
   const moves: Square[] = [];
   const { row, col } = piece.position;
   const direction = piece.color === "white" ? -1 : 1;
@@ -127,6 +139,20 @@ function calculatePawnMoves(pieces: ChessPiece[], piece: ChessPiece): Square[] {
     const rightPiece = getPieceAt(pieces, captureRight);
     if (rightPiece && rightPiece.color !== piece.color) {
       moves.push(captureRight);
+    }
+  }
+
+  // En passant
+  if (gameState?.lastMove) {
+    const lastMove = gameState.lastMove;
+    const enPassantRow = piece.color === "white" ? 3 : 4;
+
+    // Check if last move was a pawn moving two squares
+    if (lastMove.piece.type === "pawn" && Math.abs(lastMove.from.row - lastMove.to.row) === 2 && lastMove.to.row === row && Math.abs(lastMove.to.col - col) === 1 && row === enPassantRow) {
+      const enPassantSquare = { row: row + direction, col: lastMove.to.col };
+      if (isValidSquare(enPassantSquare)) {
+        moves.push(enPassantSquare);
+      }
     }
   }
 
@@ -225,7 +251,7 @@ function calculateQueenMoves(pieces: ChessPiece[], piece: ChessPiece): Square[] 
   return [...calculateRookMoves(pieces, piece), ...calculateBishopMoves(pieces, piece)];
 }
 
-function calculateKingMoves(pieces: ChessPiece[], piece: ChessPiece): Square[] {
+function calculateKingMoves(pieces: ChessPiece[], piece: ChessPiece, gameState?: GameState): Square[] {
   const moves: Square[] = [];
   const kingMoves = [
     [-1, -1],
@@ -249,7 +275,79 @@ function calculateKingMoves(pieces: ChessPiece[], piece: ChessPiece): Square[] {
     }
   }
 
+  // Castling
+  if (!piece.hasMoved && gameState) {
+    const row = piece.position.row;
+
+    // Check kingside castling
+    const kingsideRook = getPieceAt(pieces, { row, col: 7 });
+    if (kingsideRook && kingsideRook.type === "rook" && kingsideRook.color === piece.color && !kingsideRook.hasMoved) {
+      // Check if squares between king and rook are empty
+      if (!getPieceAt(pieces, { row, col: 5 }) && !getPieceAt(pieces, { row, col: 6 }) && !isSquareUnderAttack(pieces, { row, col: 4 }, piece.color) && !isSquareUnderAttack(pieces, { row, col: 5 }, piece.color) && !isSquareUnderAttack(pieces, { row, col: 6 }, piece.color)) {
+        moves.push({ row, col: 6 });
+      }
+    }
+
+    // Check queenside castling
+    const queensideRook = getPieceAt(pieces, { row, col: 0 });
+    if (queensideRook && queensideRook.type === "rook" && queensideRook.color === piece.color && !queensideRook.hasMoved) {
+      // Check if squares between king and rook are empty
+      if (
+        !getPieceAt(pieces, { row, col: 1 }) &&
+        !getPieceAt(pieces, { row, col: 2 }) &&
+        !getPieceAt(pieces, { row, col: 3 }) &&
+        !isSquareUnderAttack(pieces, { row, col: 4 }, piece.color) &&
+        !isSquareUnderAttack(pieces, { row, col: 3 }, piece.color) &&
+        !isSquareUnderAttack(pieces, { row, col: 2 }, piece.color)
+      ) {
+        moves.push({ row, col: 2 });
+      }
+    }
+  }
+
   return moves;
+}
+
+export function isSquareUnderAttack(pieces: ChessPiece[], square: Square, byColor: PieceColor): boolean {
+  const oppositeColor = byColor === "white" ? "black" : "white";
+
+  for (const piece of pieces) {
+    if (piece.color === oppositeColor) {
+      // For pawns, check diagonal attacks only
+      if (piece.type === "pawn") {
+        const direction = piece.color === "white" ? -1 : 1;
+        const attackSquares = [
+          { row: piece.position.row + direction, col: piece.position.col - 1 },
+          { row: piece.position.row + direction, col: piece.position.col + 1 },
+        ];
+
+        if (attackSquares.some((attackSquare) => attackSquare.row === square.row && attackSquare.col === square.col)) {
+          return true;
+        }
+      } else {
+        // For other pieces, use their regular move calculation but exclude en passant/castling
+        const possibleMoves = calculatePossibleMoves(pieces, piece);
+        if (possibleMoves.some((move) => move.row === square.row && move.col === square.col)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+export function isCastlingMove(from: Square, to: Square): boolean {
+  return Math.abs(from.col - to.col) === 2 && from.row === to.row;
+}
+
+export function isEnPassantMove(piece: ChessPiece, from: Square, to: Square, gameState?: GameState): boolean {
+  if (piece.type !== "pawn" || !gameState?.lastMove) return false;
+
+  const lastMove = gameState.lastMove;
+  const captureRow = piece.color === "white" ? 3 : 4;
+
+  return from.row === captureRow && to.row === (piece.color === "white" ? 2 : 5) && Math.abs(from.col - to.col) === 1 && lastMove.piece.type === "pawn" && Math.abs(lastMove.from.row - lastMove.to.row) === 2 && lastMove.to.col === to.col && lastMove.to.row === from.row;
 }
 
 export function drawBoard({ clear, normalize, draw, size: s, animations, selectedPiece }: any) {
@@ -493,21 +591,33 @@ export function squareToAlgebraic(square: Square): string {
 export function getPieceSymbol(piece: ChessPiece): string {
   switch (piece.type) {
     case "king":
-      return "K";
+      return "🨀";
     case "queen":
-      return "Q";
+      return "🨁";
     case "rook":
-      return "R";
+      return "🨂";
     case "bishop":
-      return "B";
+      return "🨃";
     case "knight":
-      return "N";
+      return "🨄";
     case "pawn":
-      return ""; // Pawns have no symbol in algebraic notation
+      return "&nbsp;"; // Pawns have no symbol in algebraic notation
   }
 }
 
-export function getMoveNotation(piece: ChessPiece, from: Square, to: Square, captured: boolean, pieces: ChessPiece[]): string {
+export function getMoveNotation(piece: ChessPiece, from: Square, to: Square, captured: boolean, pieces: ChessPiece[], gameState?: GameState): string {
+  // Handle castling
+  if (piece.type === "king" && isCastlingMove(from, to)) {
+    return to.col === 6 ? "O-O" : "O-O-O"; // Kingside or queenside castling
+  }
+
+  // Handle en passant
+  if (piece.type === "pawn" && isEnPassantMove(piece, from, to, gameState)) {
+    const fromFile = String.fromCharCode(97 + from.col);
+    const toSquare = squareToAlgebraic(to);
+    return `${fromFile}x${toSquare}`;
+  }
+
   const pieceSymbol = getPieceSymbol(piece);
   const toSquare = squareToAlgebraic(to);
 
@@ -528,7 +638,7 @@ export function getMoveNotation(piece: ChessPiece, from: Square, to: Square, cap
   const samePieces = pieces.filter((p) => p.type === piece.type && p.color === piece.color && p !== piece);
 
   const ambiguousPieces = samePieces.filter((p) => {
-    const possibleMoves = calculatePossibleMoves(pieces, p);
+    const possibleMoves = calculatePossibleMoves(pieces, p, gameState);
     return possibleMoves.some((move) => move.row === to.row && move.col === to.col);
   });
 
@@ -549,8 +659,10 @@ export function getMoveNotation(piece: ChessPiece, from: Square, to: Square, cap
     }
   }
 
-  // Build the notation
-  const captureSymbol = captured ? "x" : "";
+  const captureSymbol = captured ? "(x)" : "";
+
+  console.log(pieceSymbol, disambiguation, captureSymbol, toSquare);
+
   return `${pieceSymbol}${disambiguation}${captureSymbol}${toSquare}`;
 }
 

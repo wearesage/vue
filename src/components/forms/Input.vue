@@ -109,6 +109,7 @@ input {
 
   &[type="range"] {
     padding: 0;
+    height: fit-content;
   }
 
   &[type="color"] {

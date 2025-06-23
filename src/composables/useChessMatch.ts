@@ -1,10 +1,10 @@
 import { ref, computed } from "vue";
-import { initializePieces, type ChessPiece, getPieceAt, getMoveNotation, calculatePossibleMoves, type Square } from "../util/chess";
+import { initializePieces, type ChessPiece, type GameState, getPieceAt, getMoveNotation, calculatePossibleMoves, isCastlingMove, isEnPassantMove, type Square } from "../util/chess";
 import { useChessPieces } from "./useChessPieces";
 import { useArrowControlledRefHistory } from "./useArrowControlledRefHistory";
 
 export function useChessMatch() {
-  const state = ref({
+  const state = ref<GameState>({
     pieces: initializePieces(),
     moveList: [] as any,
     turn: "white",
@@ -14,7 +14,7 @@ export function useChessMatch() {
   const selectedPiece = ref<ChessPiece | null>(null);
   const possibleMoves = computed(() => {
     if (selectedPiece.value) {
-      return calculatePossibleMoves(state.value.pieces, selectedPiece.value);
+      return calculatePossibleMoves(state.value.pieces, selectedPiece.value, state.value);
     } else {
       return [];
     }
@@ -61,21 +61,60 @@ export function useChessMatch() {
       return;
     }
     if (!selectedPiece.value) return;
-    const fromSquare = { ...selectedPiece.value.position };
-    const capturedPiece = getPieceAt(state.value.pieces, square);
-    const isCapture = !!capturedPiece;
-    if (capturedPiece) state.value.pieces = state.value.pieces.filter((p) => p !== capturedPiece);
-    const moveNotation = getMoveNotation(selectedPiece.value, fromSquare, square, isCapture, state.value.pieces);
+
+    const piece = selectedPiece.value;
+    const fromSquare = { ...piece.position };
+    let capturedPiece = getPieceAt(state.value.pieces, square);
+    let isCapture = !!capturedPiece;
+
+    // Handle special moves
+    const isCastling = piece.type === "king" && isCastlingMove(fromSquare, square);
+    const isEnPassant = isEnPassantMove(piece, fromSquare, square, state.value);
+
+    // Handle en passant capture
+    if (isEnPassant) {
+      const capturedPawnSquare = { row: fromSquare.row, col: square.col };
+      capturedPiece = getPieceAt(state.value.pieces, capturedPawnSquare);
+      isCapture = true;
+    }
+
+    // Remove captured piece
+    if (capturedPiece) {
+      state.value.pieces = state.value.pieces.filter((p) => p !== capturedPiece);
+    }
+
+    // Handle castling - move the rook
+    if (isCastling) {
+      const rookFromCol = square.col === 6 ? 7 : 0; // Kingside or queenside
+      const rookToCol = square.col === 6 ? 5 : 3;
+      const rook = getPieceAt(state.value.pieces, { row: fromSquare.row, col: rookFromCol });
+      if (rook) {
+        rook.position = { row: fromSquare.row, col: rookToCol };
+        rook.hasMoved = true;
+      }
+    }
+
+    const moveNotation = getMoveNotation(piece, fromSquare, square, isCapture, state.value.pieces, state.value);
+
+    // Update game state
+    state.value.lastMove = {
+      piece: { ...piece },
+      from: fromSquare,
+      to: square,
+      captured: capturedPiece || undefined,
+    };
+
     state.value.moveList.push({
-      notation: state.value.turn === "white" ? `${Math.floor(state.value.moveList.length / 2) + 1}. ${moveNotation}` : moveNotation,
+      notation: moveNotation,
+      piece: { ...piece },
       squares: {
-        from: selectedPiece.value.position,
+        from: piece.position,
         to: square,
       },
     });
 
-    selectedPiece.value.position = square;
-    selectedPiece.value.hasMoved = true;
+    piece.position = square;
+    piece.hasMoved = true;
     selectedPiece.value = null;
     state.value.turn = state.value.turn === "white" ? "black" : "white";
   }

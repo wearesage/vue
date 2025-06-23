@@ -67,13 +67,13 @@ function animate() {
 
   raf.remove("chat");
   raf.add(
-    {
-      tick({ progress }) {
-        container.value.scrollTop = iS(progress);
-      },
-      duration: 750
+    (now, progress) => {
+      container.value.scrollTop = iS(progress);
     },
-    "chat"
+    {
+      duration: 750,
+      id: "chat"
+    }
   );
 }
 

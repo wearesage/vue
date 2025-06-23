@@ -1,28 +1,17 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import { createCssVariable } from "../util/styles";
+import { createCssVariable, coord } from "../util";
+import { useFullscreen } from "@vueuse/core";
 
 export const useViewport = defineStore("viewport", () => {
-  const width = ref(1);
-  const height = ref(1);
+  const { isFullscreen, exit: exitFullscreen, enter: enterFullscreen, isSupported: fullscreenSupported } = useFullscreen();
+  const width = ref(window.innerWidth);
+  const height = ref(window.innerHeight);
   const aspectRatio = computed(() => width.value / height.value);
-  const dpr = ref();
-  const touch = ref();
-  const isMobile = computed(() => touch.value);
-  const clicked = ref([-1, -1]);
-  const mouse = ref([-1, -1]);
-  const popoverVisible = ref(false);
-
-  const artboard = computed(() => {
-    return {
-      width: width.value * dpr.value,
-      height: height.value * dpr.value,
-      css: {
-        width: `${width.value}px`,
-        height: `${height.value}px`,
-      },
-    };
-  });
+  const dpr = ref(window.devicePixelRatio);
+  const clicked = ref(coord(-1, -1));
+  const mouse = ref(coord(-1, -1));
+  const touch = ref("ontouchstart" in window);
 
   function set() {
     width.value = window.innerWidth;
@@ -33,16 +22,31 @@ export const useViewport = defineStore("viewport", () => {
     createCssVariable("--viewport-height", `${height.value}px`);
   }
 
+  function triggerMouse() {
+    const { x, y } = mouse.value;
+    mouse.value = coord(x, y);
+  }
+
+  function toggleFullscreen() {
+    if (isFullscreen.value) {
+      exitFullscreen();
+    } else {
+      enterFullscreen();
+    }
+  }
+
   set();
 
   window.addEventListener("resize", set);
 
   document.body.addEventListener("click", (e) => {
-    clicked.value = [e.clientX, e.clientY];
+    const [x, y] = [e.clientX, e.clientY];
+    clicked.value = coord(x, y);
   });
 
   document.body.addEventListener("mousemove", (e) => {
-    mouse.value = [e.clientX, e.clientY];
+    const [x, y] = [e.clientX, e.clientY];
+    mouse.value = coord(x, y);
   });
 
   return {
@@ -50,11 +54,10 @@ export const useViewport = defineStore("viewport", () => {
     height,
     dpr,
     aspectRatio,
-    touch,
-    isMobile,
     clicked,
     mouse,
-    popoverVisible,
-    artboard,
+    triggerMouse,
+    toggleFullscreen,
+    fullscreenSupported,
   };
 });

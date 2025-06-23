@@ -20,13 +20,13 @@ export function useAppliedVolume(volume: Ref<number>, playing: Ref<boolean>) {
       const iO = val ? interpolateNumber(1, volume.value) : interpolateNumber(volume.value, 1);
       raf.remove("player");
       raf.add(
-        {
-          tick({ progress }) {
-            appliedVolume.value = iO(progress);
-          },
-          duration: 750,
+        (now, progress) => {
+          appliedVolume.value = iO(progress);
         },
-        "player"
+        {
+          id: "player",
+          duration: 750,
+        }
       );
     }
   );

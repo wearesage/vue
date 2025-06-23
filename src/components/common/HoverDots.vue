@@ -57,15 +57,15 @@ watch(
       const iOR = interpolateNumber(ORB_RADIUS.value, ORB_RADIUS.value * 2);
       raf.remove("clicked");
       raf.add(
-        {
-          tick({ progress }) {
-            radius.value = iR(progress);
-            pathPadding.value = iP(progress);
-            ORB_RADIUS.value = iOR(progress);
-          },
-          duration: 120
+        (now, progress) => {
+          radius.value = iR(progress);
+          pathPadding.value = iP(progress);
+          ORB_RADIUS.value = iOR(progress);
         },
-        "clicked"
+        {
+          duration: 120,
+          id: "clicked"
+        }
       );
     } else {
       const iR = interpolateNumber(radius.value, fromRadius);
@@ -73,15 +73,15 @@ watch(
       const iOR = interpolateNumber(ORB_RADIUS.value, fromOrbRadius);
       raf.remove("clicked");
       raf.add(
-        {
-          tick({ progress }) {
-            radius.value = iR(progress);
-            pathPadding.value = iP(progress);
-            ORB_RADIUS.value = iOR(progress);
-          },
-          duration: 120
+        (now, progress) => {
+          radius.value = iR(progress);
+          pathPadding.value = iP(progress);
+          ORB_RADIUS.value = iOR(progress);
         },
-        "clicked"
+        {
+          duration: 120,
+          id: "clicked"
+        }
       );
     }
   }
@@ -218,16 +218,16 @@ function mouseover(e: any) {
     const iS = interpolateRgb("#ff0b5c", "#fff");
     raf.remove("clicked");
     raf.add(
-      {
-        tick({ progress }) {
-          overlayOpacity.value = iO(progress);
-          cursorColor.value = iS(progress);
-          pathPadding.value = iP(progress);
-          radius.value = iR(progress);
-        },
-        duration: 150
+      (now, progress) => {
+        overlayOpacity.value = iO(progress);
+        cursorColor.value = iS(progress);
+        pathPadding.value = iP(progress);
+        radius.value = iR(progress);
       },
-      "clicked"
+      {
+        duration: 150,
+        id: "clicked"
+      }
     );
 
     createOrbs();
@@ -250,16 +250,16 @@ function mouseout(e: any) {
     const iO = interpolateNumber(overlayOpacity.value, 0);
     raf.remove("clicked");
     raf.add(
-      {
-        tick({ progress }) {
-          cursorColor.value = iS(progress);
-          radius.value = iR(progress);
-          pathPadding.value = iP(progress);
-          overlayOpacity.value = iO(progress);
-        },
-        duration: 300
+      (now, progress) => {
+        cursorColor.value = iS(progress);
+        radius.value = iR(progress);
+        pathPadding.value = iP(progress);
+        overlayOpacity.value = iO(progress);
       },
-      "clicked"
+      {
+        duration: 300,
+        id: "clicked"
+      }
     );
   }
 }
@@ -290,7 +290,7 @@ function drawSpotlight(ctx: CanvasRenderingContext2D, x: number, y: number, radi
   ctx.restore();
 }
 
-useAnimation(({ now: _now }) => {
+useAnimation(_now => {
   const now = props.stream || _now;
 
   clear();
@@ -310,7 +310,14 @@ useAnimation(({ now: _now }) => {
     // Draw and update orbiting particles
     if (box.value.target && orbs.value.length > 0) {
       // Generate path points for the current frame
-      const pathPoints = generatePathPoints(box.value.x, box.value.y, box.value.width, box.value.height, borderRadius.value, orbs.value.length);
+      const pathPoints = generatePathPoints(
+        box.value.x,
+        box.value.y,
+        box.value.width,
+        box.value.height,
+        borderRadius.value,
+        orbs.value.length
+      );
 
       orbs.value.forEach(orb => {
         // Update orb position along the path

@@ -1,13 +1,20 @@
 <template>
   <section>
     <aside ref="glsl"></aside>
-    <Shader ref="shader" v-if="sketch" :shader="sketch.shader" :uniforms="sketch.variants[0]" :stream="raf.time / 1000" :animate="true" :dpr="1" />
+    <Shader
+      ref="shader"
+      v-if="sketch"
+      :shader="sketch.shader"
+      :uniforms="sketch.variants[0]"
+      :stream="raf.time / 1000"
+      :animate="true"
+      :dpr="1" />
   </section>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
-import Shader from "../shaders/Shader.vue";
+import Shader from "../webgl/Sketch.vue";
 import { useRAF } from "../../stores/raf";
 import { useGLSLEditor } from "../../composables/useGLSLEditor";
 
@@ -19,9 +26,13 @@ const glsl = ref();
 const raf = useRAF();
 const shader = ref();
 
-useGLSLEditor(glsl, { shader: props.sketch.shader, uniforms: props.sketch.variants[0] }, (value: string) => {
-  props.sketch.shader = value;
-});
+useGLSLEditor(
+  glsl,
+  { shader: props.sketch.shader, uniforms: props.sketch.variants[0] },
+  (value: string) => {
+    props.sketch.shader = value;
+  }
+);
 
 defineExpose({
   canvas: () => shader?.value?.canvas
