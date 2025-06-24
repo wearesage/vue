@@ -111,9 +111,14 @@ aside {
   animation: none !important;
   opacity: 1 !important;
 }
+
 .cm-scroller {
   max-height: 100vh;
   overflow-y: scroll !important;
   @include hide-scroll-bar;
+}
+
+html body .cm-content {
+  caret-color: $pink !important;
 }
 </style>
