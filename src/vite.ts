@@ -1,6 +1,5 @@
 import Vue from "@vitejs/plugin-vue";
 import AutoImport from "unplugin-auto-import/vite";
-import Components from "unplugin-vue-components/vite";
 import SVG from "vite-svg-loader";
 import VueRouter from "unplugin-vue-router/vite";
 import { VueRouterAutoImports } from "unplugin-vue-router";
@@ -22,13 +21,8 @@ export const plugins: PluginOption[] = [
   SVG(),
   AutoImport({
     imports: AUTO_IMPORTED_LIBS,
-    // dirs: AUTO_IMPORTED_DIRS.map((dir) => `/Users/zach/dev/@wearesage-vue/src/${dir}`),
     dts: `auto-imports.d.ts`,
   }),
-  // Components({
-  //   dts: true,
-  //   dirs: "/Users/zach/dev/@wearesage-vue/src/components",
-  // }),
 ];
 
 export const css: CSSOptions = {
