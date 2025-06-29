@@ -1,15 +1,11 @@
 <template>
-  <component
-    class="row"
-    :is="is"
-    :class="{ center, cascade, collapse }"
-    v-bind="$attrs">
+  <component class="row" ref="element" :is="is" :class="{ center, cascade, collapse }" v-bind="$attrs">
     <slot />
   </component>
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useTruthyNumber, useDimensionalStyleShorthand, useWithUnit } from "../../composables";
 import { type LayoutProps, DEFAULT_LAYOUT_PROPS } from "../../types/layout";
 
@@ -19,6 +15,9 @@ const height = computed(() => (props.height ? props.height : "fit-content"));
 const numericGap = useTruthyNumber(props.gap);
 const gap = useWithUnit(numericGap);
 const padding = useDimensionalStyleShorthand(props.padding);
+const element = ref();
+
+defineExpose({ element });
 </script>
 
 <style lang="scss" scoped>
@@ -31,6 +30,7 @@ const padding = useDimensionalStyleShorthand(props.padding);
   padding: v-bind(padding);
   width: v-bind(width);
   height: v-bind(height);
+  overflow: visible;
 }
 
 .center {

@@ -12,10 +12,13 @@
 
 <script setup lang="ts">
 import FormElement from "./FormElement.vue";
+import type { ToggleProps } from "../../types/form";
 
-const emit = defineEmits(["update:model-value"]);
+const emit = defineEmits<{
+  "update:model-value": [value: boolean];
+}>();
 
-defineProps<{ label?: string; modelValue: boolean; disabled?: boolean }>();
+defineProps<ToggleProps>();
 
 function onInput({ target: { checked } }: any) {
   emit("update:model-value", checked);

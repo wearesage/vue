@@ -6,7 +6,7 @@
 </template>
 
 <script setup lang="ts">
-import { formatTime, formatTimeAgo } from "../../util/time";
+import { formatTime, formatTimeAgo } from "../../util";
 
 const props = defineProps<{ value: any }>();
 const time = formatTime(props.value);

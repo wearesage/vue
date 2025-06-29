@@ -1,11 +1,17 @@
 <template>
-  <ul class="messages" ref="container">
+  <ul
+    class="messages"
+    ref="container">
     <TransitionGroup name="fade">
-      <template v-for="(message, i) in messages" :key="message">
-        <ChatMessage :message="message" @remove="remove(message)" :model="model" />
+      <template
+        v-for="(message, i) in messages"
+        :key="message">
+        <ChatMessage
+          :message="message"
+          @remove="remove(message)"
+          :model="model" />
       </template>
     </TransitionGroup>
-    <ShaderTool ref="shader" v-if="sketch" :sketch="sketch" />
   </ul>
 </template>
 
@@ -14,7 +20,6 @@ import { ref, watch, nextTick, onMounted } from "vue";
 import { parse } from "yaml";
 import { interpolateNumber } from "d3-interpolate";
 import ChatMessage from "./ChatMessage.vue";
-import ShaderTool from "./ShaderTool.vue";
 import { useRAF } from "../../stores/raf";
 
 const raf = useRAF();

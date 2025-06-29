@@ -58,12 +58,7 @@ html {
   --element-size: 4rem;
   --primary-color: var(--pink);
   --row-gradient: linear-gradient(to bottom, #{darken($black, 2.5%)}, #{lighten($black, 2.5%)});
-}
-
-html,
-body {
-  @include size(100%);
-  overflow: hidden;
+  --display: "Major Mono Display", monospace;
 }
 
 body {
@@ -79,13 +74,20 @@ body {
   }
 }
 
+html,
+body,
+#app {
+  height: 100%;
+  overflow: hidden;
+}
+
 h1,
 h2,
 h3,
 h4,
 h5,
 h6 {
-  font-family: "Major Mono Display";
+  font-family: var(--display);
   font-weight: normal;
   font-style: normal;
 }

@@ -1,6 +1,6 @@
 import { ref } from "vue";
 import { defineStore } from "pinia";
-import * as env from "../util/env";
+import * as env from "../util";
 
 export const useDevice = defineStore("device", () => {
   const isSafari = ref(env.isSafari());

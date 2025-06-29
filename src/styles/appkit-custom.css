@@ -1,0 +1,29 @@
+/* Kaleidosync AppKit Custom Styling */
+
+/* Override AppKit CSS variables for deeper customization */
+:root {
+  /* Primary brand colors */
+  --w3m-accent: var(--purple) !important;
+  --w3m-color-mix: var(--black) !important;
+  --w3m-color-mix-strength: 20% !important;
+
+  /* Typography */
+  --w3m-font-family: "Space Mono" -apple-system, BlinkMacSystemFont, sans-serif !important;
+  --w3m-font-weight: normal;
+  --w3m-font-size-master: 0.6rem !important;
+
+  /* Layout & spacing */
+  --w3m-border-radius-master: 0.25rem !important;
+  --w3m-z-index: 9999 !important;
+
+  /* Dark theme enhancements */
+  --w3m-background-color: var(--black) !important;
+  --w3m-foreground-color: #ffffff !important;
+
+  /* QR code styling */
+  --w3m-qr-color: #8b5cf6 !important;
+}
+
+w3m-modal {
+  backdrop-filter: blur(1rem);
+}

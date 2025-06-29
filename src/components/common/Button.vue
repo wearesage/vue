@@ -1,7 +1,5 @@
 <template>
-  <button
-    v-bind="$attrs"
-    @click="$emit('click')">
+  <button v-bind="$attrs" @click="$emit('click')">
     <slot />
   </button>
 </template>
@@ -24,6 +22,7 @@ button {
 
   &:hover {
     transform: scale(1.025);
+    background: lighten($black, 15%) !important;
   }
 
   &:active {

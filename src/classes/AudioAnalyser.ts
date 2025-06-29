@@ -58,8 +58,8 @@ export default class AudioAnalyser {
       bitDepth: bitDepth || Math.pow(2, 10),
       meyda: meyda || false,
       lowpass: lowpass || {
-        frequency: 2000,
-        Q: 0.5,
+        frequency: 7500,
+        Q: 0.75,
       },
     };
 
@@ -172,7 +172,7 @@ export default class AudioAnalyser {
     const frameDuration = 1000 / frameRate;
     const [ref, min] = this.sampleVolume((this.config.definitions[0][0] * 1000) / frameDuration);
     const [sample] = this.sampleVolume((this.config.definitions[0][1] * 1000) / frameDuration);
-    const raw = Number(Math.pow(scaleLinear([min, ref], [0, 1])(sample), 1.5).toFixed(3));
+    const raw = Number(Math.pow(scaleLinear([min, ref], [0, 1])(sample), this.state.source === "spotify" ? 1 : 1.5).toFixed(3));
 
     if (!isNaN(raw)) {
       this.state.volume = raw / 2;

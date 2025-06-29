@@ -9,7 +9,7 @@ $green: #65dca6;
 $blue: #3f87e6;
 $teal: #4696d8;
 $ice: #2093f0;
-$black: #13131b;
+$black: #0b090c;
 $light-gray: #75759c;
 $gray: #4e4e61;
 $dark-gray: #2c2c36;
@@ -32,4 +32,12 @@ $color-map: (
   "dark-gray": $dark-gray,
   "white": $white,
   "light-purple": $light-purple,
+);
+
+$source-colors: (
+  AUDIUS: $purple,
+  SPOTIFY: $green,
+  RADIO_PARADISE: $blue,
+  MICROPHONE: $pink,
+  FILE: $orange,
 );

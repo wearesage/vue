@@ -1,112 +1,226 @@
 import { defineStore } from "pinia";
-import { ref, computed, watch } from "vue";
-import { createAppKit, useAppKit, useAppKitAccount } from "@reown/appkit/vue";
-import { Ethers5Adapter } from "@reown/appkit-adapter-ethers5";
-import { mainnet, arbitrum } from "@reown/appkit/networks";
-import { createSIWEConfig, formatMessage } from "@reown/appkit-siwe";
-
-const BASE_URL = import.meta.env.VITE_WEB3 + "/api/agent";
-
-async function _fetchToolsMetadata() {
-  try {
-    const data = await fetch(BASE_URL + "/tools-metadata").then((v) => v.json());
-    return data;
-  } catch (error) {
-    console.error("Failed to fetch tools metadata:", error);
-  }
-}
+import { ref, computed, watch, nextTick } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import { api } from "../api/client";
+import { useToast } from "./toast";
+import { useWallet } from "../composables/auth/useWallet";
+import { VITE_DEFAULT_AUTHENTICATED_VIEW } from "../constants/env";
 
 export const useAuth = defineStore("auth", () => {
-  const siweConfig = createSIWEConfig({
-    getMessageParams: async () => ({
-      domain: window.location.host,
-      uri: window.location.origin,
-      chains: [mainnet.id, arbitrum.id],
-      statement: "Sign in and authorize agent tools.",
-      resources: toolsMetadata.value.map((tool: any) => `urn:goat:tool:${tool.name}:${encodeURIComponent(tool.description)}`),
-    }),
-    createMessage: ({ address, ...args }) => {
-      return createToolsMessage({ address, ...args });
-    },
-    getNonce: async () => {
-      return Math.random().toString(36).substring(7);
-    },
-    getSession: async () => {
-      const stored = localStorage.getItem("siwe-session");
-      if (!stored) return null;
-      try {
-        return JSON.parse(stored);
-      } catch {
-        return null;
-      }
-    },
-    verifyMessage: async ({ message, signature }) => {
-      try {
-        const response = await fetch("http://localhost:3000/api/auth/verify-siwe", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message, signature }),
-        });
+  const router = useRouter();
+  const route = useRoute();
+  const toast = useToast();
+  const wallet = useWallet();
+  const authToken = ref<string | null>(localStorage.getItem("authToken"));
+  const refreshToken = ref<string | null>(localStorage.getItem("refreshToken"));
+  const user = ref<any>(JSON.parse(localStorage.getItem("user") || "null"));
+  const loading = ref(true);
+  const isAuthenticating = ref(false);
+  const isHydrated = ref(false);
+  const hydratedTokenValid = ref(false);
 
-        if (response.ok) {
-          const session = await response.json();
-          localStorage.setItem("siwe-session", JSON.stringify(session));
-          return true;
-        }
-        return false;
-      } catch {
-        return false;
-      }
-    },
-    signOut: async () => {
-      localStorage.removeItem("siwe-session");
-      return true;
-    },
+  let _authDetermined: any;
+
+  let authDetermined = new Promise((resolve) => {
+    _authDetermined = resolve;
   });
 
-  createAppKit({
-    adapters: [new Ethers5Adapter()],
-    projectId: import.meta.env.VITE_REOWN_PROJECT_ID,
-    networks: [mainnet, arbitrum],
-    siweConfig,
+  const isAuthenticated = computed(
+    () =>
+      (isHydrated.value && hydratedTokenValid.value && !!authToken.value && !!user.value) ||
+      (!isHydrated.value && !!authToken.value && !!user.value)
+  );
+
+  const walletAddress = computed(() => user.value?.walletAddress || null);
+
+  watch(authToken, (token) => {
+    if (token) {
+      localStorage.setItem("authToken", token);
+    } else {
+      localStorage.removeItem("authToken");
+    }
   });
 
-  const { open, close } = useAppKit();
-  const isOpen = ref(false);
-  const account = useAppKitAccount();
-  const cachedAddress = localStorage.getItem("REOWN:wallet");
-  const authenticated = computed(() => cachedAddress?.length || account.value?.address !== undefined);
-  const toolsMetadata = ref<any>();
-
-  function createToolsMessage({ address, ...args }: any) {
-    const baseMessage = formatMessage(args, address);
-    const toolsSection = `
-
-  Tools to authorize:
-  ${toolsMetadata.value.map((tool) => `- ${tool.name}: ${tool.description}`).join("\n")}`;
-
-    return baseMessage + toolsSection;
-  }
+  watch(refreshToken, (token) => {
+    if (token) {
+      localStorage.setItem("refreshToken", token);
+    } else {
+      localStorage.removeItem("refreshToken");
+    }
+  });
 
   watch(
-    () => [authenticated.value, account.value?.address],
-    () => {
-      if (!account.value?.address) return;
+    user,
+    (userData) => {
+      if (userData) {
+        localStorage.setItem("user", JSON.stringify(userData));
+      } else {
+        localStorage.removeItem("user");
+      }
+    },
+    { deep: true }
+  );
+
+  watch(
+    isAuthenticated,
+    (authenticated) => {
+      if (authenticated && route.fullPath === "/") {
+        router.replace(VITE_DEFAULT_AUTHENTICATED_VIEW);
+      }
     },
     { immediate: true }
   );
 
-  async function fetchToolsMetadata() {
-    toolsMetadata.value = await _fetchToolsMetadata();
+  async function validateStoredToken(): Promise<boolean> {
+    const token = localStorage.getItem("authToken");
+
+    if (!token) return false;
+
+    try {
+      const response = await api.get("/api/auth/validate");
+
+      if (response.data?.user) {
+        user.value = response.data.user;
+        hydratedTokenValid.value = true;
+        return true;
+      }
+
+      hydratedTokenValid.value = false;
+      return false;
+    } catch (error: any) {
+      if (error.response?.status === 401) clearAuthState();
+      hydratedTokenValid.value = false;
+      return false;
+    }
   }
 
-  fetchToolsMetadata();
+  function clearAuthState() {
+    authToken.value = null;
+    refreshToken.value = null;
+    user.value = null;
+    hydratedTokenValid.value = false;
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
+  }
+
+  async function signIn() {
+    try {
+      isAuthenticating.value = true;
+      if (!wallet.isConnected.value) {
+        await wallet.connect();
+        await new Promise<void>((resolve) => {
+          const unwatch = watch(
+            () => wallet.isConnected.value,
+            (connected) => {
+              if (connected) {
+                unwatch();
+                resolve();
+              }
+            }
+          );
+
+          const unwatchModal = watch(
+            () => wallet.isModalOpen.value,
+            (isOpen) => {
+              if (!isOpen && !wallet.isConnected.value) {
+                unwatch();
+                unwatchModal();
+                resolve();
+              }
+            }
+          );
+        });
+
+        if (!wallet.isConnected.value) {
+          toast.message("Connection cancelled");
+          return;
+        }
+      }
+
+      toast.message("Getting authentication challenge...");
+      const challengeResponse = await api.post("/api/auth/challenge", {
+        address: wallet.address.value,
+      });
+
+      const { message } = challengeResponse.data;
+      toast.message("Please sign the message in your wallet...");
+
+      let signature: string;
+      try {
+        signature = await wallet.signMessage(message);
+      } catch (error: any) {
+        if (error.message?.includes("rejected")) {
+          await wallet.disconnect();
+          toast.error("Signature rejected");
+          return;
+        }
+        throw error;
+      }
+
+      toast.message("Verifying signature...");
+
+      const verifyResponse = await api.post("/api/auth/verify", {
+        message,
+        signature,
+        address: wallet.address.value,
+      });
+
+      const { accessToken, refreshToken: newRefreshToken, user: userData } = verifyResponse.data;
+      authToken.value = accessToken;
+      refreshToken.value = newRefreshToken;
+      user.value = userData;
+      toast.message(`Welcome ${userData.walletAddress.slice(0, 8)}!`);
+      console.log("🚀 Sign in successful, redirecting to", VITE_DEFAULT_AUTHENTICATED_VIEW);
+      _authDetermined?.(true);
+      if (route.fullPath === "/") {
+        router.replace(VITE_DEFAULT_AUTHENTICATED_VIEW);
+      }
+    } catch (error: any) {
+      console.error("Sign in failed:", error);
+      toast.error("Authentication failed");
+      throw error;
+    } finally {
+      isAuthenticating.value = false;
+    }
+  }
+
+  async function signOut() {
+    try {
+      await api.post("/api/auth/logout").catch(() => {});
+    } finally {
+      clearAuthState();
+      await wallet.disconnect();
+      toast.message("Signed out successfully");
+      router.replace("/");
+    }
+  }
+
+  async function initialize() {
+    try {
+      loading.value = true;
+      await validateStoredToken();
+      isHydrated.value = true;
+    } finally {
+      loading.value = false;
+      if (isAuthenticated.value && route.fullPath === "/") {
+        _authDetermined?.(isAuthenticated.value);
+        router.replace(VITE_DEFAULT_AUTHENTICATED_VIEW);
+      }
+    }
+  }
 
   return {
-    open,
-    close,
-    account,
-    authenticated,
-    isOpen,
+    authToken: computed(() => authToken.value),
+    refreshToken: computed(() => refreshToken.value),
+    user: computed(() => user.value),
+    walletAddress,
+    loading: computed(() => loading.value),
+    isAuthenticating: computed(() => isAuthenticating.value),
+    isAuthenticated,
+    signIn,
+    signOut,
+    initialize,
+    authDetermined,
   };
 });

@@ -41,7 +41,7 @@ import { ref, computed, watch, type Ref } from "vue";
 import { addYears, getDaysInMonth, startOfMonth, isAfter, isBefore } from "date-fns";
 import Button from "./Button.vue";
 import Row from "../layout/Row.vue";
-import { generateMonthMap, type Month, type Months } from "../../util/dates";
+import { generateMonthMap, type Month, type Months } from "../../util";
 
 const props = withDefaults(
   defineProps<{

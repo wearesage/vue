@@ -7,11 +7,13 @@
         :shader="sketch.shader"
         :uniforms="sketch.variants[0]"
         :width="width"
-        :height="height"
-        :scale="getScale(i)"
-        :position="getPosition(i)"
-        :rotation="[0, 0, Math.PI / 2]">
-        <TresCircleGeometry :args="[0.175, 32]" />
+        :height="width"
+        :volume="volume"
+        :stream="stream"
+        :visible="scalesByIndex[i] > 0"
+        :scale="scalesByIndex[i]"
+        :position="positionsByIndex[i]">
+        <TresCircleGeometry :args="[device.isMobile ? 0.165 : 0.175, 32]" />
       </SketchMesh>
     </template>
   </TresGroup>
@@ -22,6 +24,9 @@ import SketchMesh from "./SketchMesh.vue";
 import { type ShaderScrollProps } from "../../types/sketches";
 import { useShaderLayout } from "../../composables";
 import { computed, shallowRef } from "vue";
+import { useDevice } from "../../stores";
+
+const device = useDevice();
 
 defineEmits(["select"]);
 
@@ -30,7 +35,7 @@ const props = withDefaults(defineProps<ShaderScrollProps>(), {
   renderMode: "manual",
   volume: 1,
   stream: 0,
-  animate: false,
+  animate: true,
   visible: false
 });
 
@@ -50,4 +55,6 @@ defineExpose({
 });
 
 const { getPosition, getScale, scrollOffset } = useShaderLayout(props);
+const scalesByIndex = computed(() => sketches.value.map((_, i) => getScale(i)));
+const positionsByIndex = computed(() => sketches.value.map((_, i) => getPosition(i)));
 </script>

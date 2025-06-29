@@ -15,7 +15,7 @@
 <script setup lang="ts">
 import Column from "../layout/Column.vue";
 import Row from "../layout/Row.vue";
-import { formatSeconds } from "../../util/time";
+import { formatSeconds } from "../../util";
 
 withDefaults(
   defineProps<{

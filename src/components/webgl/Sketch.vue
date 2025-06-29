@@ -1,13 +1,7 @@
 <template>
-  <TresCanvas
-    class="sketch"
-    @click="$emit('click')"
-    :render-mode="'always'"
-    ref="canvas">
+  <TresCanvas class="sketch" @click="$emit('click')" :render-mode="'manual'" ref="canvas">
     <TresPerspectiveCamera :position="[0, 0, 1]" />
-    <SketchMesh
-      v-bind="{ shader, uniforms, animate, width, height, dpr }"
-      ref="sketch">
+    <SketchMesh v-bind="{ shader, volume, stream, uniforms, animate, width, height, dpr }" ref="sketch">
       <slot />
     </SketchMesh>
   </TresCanvas>

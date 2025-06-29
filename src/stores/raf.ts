@@ -11,6 +11,7 @@ export type Animation = {
   start?: number;
   autoStart?: boolean;
   easing?: (v: number) => number;
+  state?: Ref<boolean>;
 };
 
 export const useRAF = defineStore("raf", () => {
@@ -23,40 +24,32 @@ export const useRAF = defineStore("raf", () => {
   const time: Ref<number> = ref(window.performance.now());
   const frameRate: any = ref(60);
   const promises: any = {};
+  const preFrame: any = ref([]);
 
   function add(tick: AnimationTick, animation: Animation) {
-    const definition: Animation = {
-      tick,
-      start: window.performance.now(),
-      ...animation,
-      easing: animation.easing || ease,
-      id: animation.id || v4(),
-    };
+    remove(animation?.id);
 
-    // Start RAF loop if not already running
-    if (raf.value === 0) {
-      start();
-    }
+    animation.tick = tick;
+    animation.easing = animation.easing || ease;
+    animation.start = window.performance.now();
 
-    if (definition.duration) {
-      queue.value.push(definition);
+    if (raf.value === 0) start();
+
+    if (animation.duration) {
+      queue.value.push(animation);
       return new Promise((resolve) => {
-        promises[definition.id as string] = resolve;
+        promises[animation.id as string] = resolve;
       });
     } else {
-      map.value[animation.id] = definition;
+      map.value[animation.id] = animation;
     }
   }
 
   function remove(id: string) {
     delete map.value[id];
     delete promises[id];
-
-    // Remove from queue if it exists there too
     const queueIndex = queue.value.findIndex((animation: Animation) => animation.id === id);
-    if (queueIndex !== -1) {
-      queue.value.splice(queueIndex, 1);
-    }
+    if (queueIndex !== -1) queue.value.splice(queueIndex, 1);
   }
 
   function start() {
@@ -86,6 +79,10 @@ export const useRAF = defineStore("raf", () => {
   function tick(now: DOMHighResTimeStamp) {
     frameNumber.value++;
     time.value = window.performance.now();
+
+    preFrame.value.forEach((fn: (now: DOMHighResTimeStamp) => void) => {
+      fn(now);
+    });
 
     queue.value.forEach((animation: Animation, i: number) => {
       const elapsed = now - (animation?.start || 0);
@@ -118,12 +115,13 @@ export const useRAF = defineStore("raf", () => {
 
     frame(now);
 
-    // Only continue RAF loop if there are active animations
     if (queue.value.length > 0 || keys.length > 0) {
       raf.value = window.requestAnimationFrame(tick);
     } else {
-      raf.value = 0; // Clear RAF ID when stopped
+      raf.value = 0;
     }
+
+    preFrame.value = [];
   }
 
   return {
@@ -135,6 +133,7 @@ export const useRAF = defineStore("raf", () => {
     map,
     queue,
     frameRate,
+    preFrame,
     frameNumber,
     $reset() {
       stop();

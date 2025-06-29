@@ -1,143 +1,65 @@
-import { ref, shallowRef, markRaw, computed, Ref } from "vue";
+import { ref, shallowRef, computed, watch } from "vue";
 import { defineStore } from "pinia";
 import { useRAF } from "./raf";
-import { buildVariantInterpolator, clone, sample } from "../util";
-import { transformLegacySketch, isValidSketch, cleanStudyIterations, type LegacySketch } from "../util/transformLegacySketch";
-import legacyData from "../data/shaders/old.json";
-import studyData from "../data/shaders/studies.json";
 import type { Sketch, Variant, AddUniformProps } from "../types/sketches";
-import { addUniformToSketch, patchUniformValueWithName } from "../util";
-
-const data = (legacyData as LegacySketch[]).filter(isValidSketch).map(transformLegacySketch);
-const validSketchIds = new Set(data.map((sketch) => sketch._id));
-const cleanedStudyData = cleanStudyIterations(studyData, validSketchIds);
-
-const STUDY_MAP = cleanedStudyData.reduce((acc: any, study: any, i: number) => {
-  acc[study._id] = i;
-  return acc;
-}, {});
-
-const ITERATION_MAP = data.reduce((acc: any, iteration: any, i: number) => {
-  acc[iteration._id] = i;
-  return acc;
-}, {});
-
-const _published = markRaw(cleanedStudyData[STUDY_MAP["66f2980c92cc9d303e380427"]].iterations.map((id: any) => data[ITERATION_MAP[id]]));
+import { useStudies } from "../composables";
+import { buildVariantInterpolator, clone, sample, addUniformToSketch, patchUniformValueWithName, generateVariant } from "../util";
 
 type SelectionMethod = "pointer" | "keyboard" | "internal";
 
+const PUBLISHED_STUDY = "66f2980c92cc9d303e380427";
+
 export const useSketches = defineStore("sketches", () => {
   const raf = useRAF();
-  const iterations = shallowRef<any>(data);
-  const studies = shallowRef<any>(cleanedStudyData);
-  const published = shallowRef<Sketch[]>(clone(_published));
-  const pubLen = shallowRef(published.value.length);
-  const variant = ref(0);
-  const shuffleVariants = ref(false);
-  const sketchSelectionMethod = ref<SelectionMethod>("pointer");
-  const tweening = ref(false);
   const sketch = shallowRef<Sketch | null>(null);
-  const sketchId = computed(() => sketch.value?._id || null);
+  const activeSketchId = computed(() => sketch.value?._id || null);
+  const activeStudyId = ref(PUBLISHED_STUDY);
+  const { iterations, index } = useStudies(activeStudyId, activeSketchId);
   const shader = ref();
   const uniforms = ref<Variant>({});
-  const magicNumber = 0.8;
+  const variant = ref(0);
+  const shuffleVariants = ref(false);
+  const variantShuffleInterval = ref<any>(null);
   const keyboardIndex = ref(0);
-  const index = computed(() => {
-    let ind = -1;
-    if (!sketchId.value) return ind;
-    for (let i = 0; i < pubLen.value; i++) {
-      const id = published.value[i]._id;
-      if (id === sketchId.value) ind = i;
-    }
-    return ind;
-  });
-
-  /**
-   * An array of each working uniform key.
-   *
-   * ['zoom', 'rotation', 'invert']
-   *
-   */
-  const uniformKeys = computed(() => Object.keys(uniforms.value || {}));
-
-  /**
-   * Each working uniform key, serialized, comma-delimited.
-   *
-   * 'zoom,rotation,true'
-   *
-   */
-  const uniformKeysSerialized = computed(() => uniformKeys.value.join(","));
-
-  /**
-   * An array of each working uniform value.
-   *
-   * [
-   *    1.231,
-   *   12.212,
-   *     true
-   * ]
-   *
-   */
-  const uniformValues = computed(() => uniformKeys.value.map((v: string) => (uniforms.value as any)?.[v]?.value));
-
-  /**
-   * Each working uniform value, serialized, comma-delimited.
-   *
-   * '1.231,12.212,true'
-   *
-   */
-  const uniformValuesSerialized = computed(() => uniformValues.value.join(","));
-
-  /**
-   * The `activeVariant` is a reference to the original state of the active sketch's selected variant.
-   */
+  const sketchSelectionMethod = ref<SelectionMethod>("pointer");
+  const tweening = ref(false);
+  const shaderError = ref<any>(null);
+  const magicInterval = ref<any>(null);
+  const uniformKeys = computed(() => Object.keys(uniforms.value || {})); // ['zoom', 'rotation', 'invert']
+  const uniformKeysSerialized = computed(() => uniformKeys.value.join(",")); // 'zoom,rotation,true'
+  const uniformValues = computed(() => uniformKeys.value.map((v: string) => (uniforms.value as any)?.[v]?.value)); // [1.231, 12.212, true]
+  const uniformValuesSerialized = computed(() => uniformValues.value.join(",")); // '1.231,12.212,true'
   const activeVariant = computed(() => clone(sketch?.value?.variants?.[variant.value] || {}));
-
-  /**
-   * An array of each `activeVariant` key.
-   *
-   * ['zoom', 'rotation', 'invert']
-   */
-  const activeVariantKeys = computed(() => Object.keys(activeVariant.value));
-
-  /**
-   * Each `activeVariant` key, serialized, comma-delimited.
-   *
-   * 'zoom,rotation,true'
-   */
-  const activeVariantKeysSerialized = computed(() => activeVariantKeys.value.join(","));
-
-  /**
-   * An array of each `activeVariant` value.
-   *
-   * [
-   *    1.231,
-   *   12.212,
-   *     true
-   * ]
-   */
-  const activeVariantValues = computed(() => activeVariantKeys.value.map((v) => activeVariant.value[v]?.value));
-
-  /**
-   * Each `activeVariant` value, serialized, comma-delimited.
-   *
-   * '1.231,12.212,true'
-   */
-  const activeVariantValuesSerialized = computed(() => activeVariantValues.value.join(","));
-
+  const activeVariantKeys = computed(() => Object.keys(activeVariant.value)); // ['zoom', 'rotation', 'invert']
+  const activeVariantKeysSerialized = computed(() => activeVariantKeys.value.join(",")); //  'zoom,rotation,true'
+  const activeVariantValues = computed(() => activeVariantKeys.value.map((v) => activeVariant.value[v]?.value)); // [1.231, 12.212, true]
+  const activeVariantValuesSerialized = computed(() => activeVariantValues.value.join(",")); // '1.231,12.212,true'
   const uniformKeysDirty = computed(() => uniformKeysSerialized.value !== activeVariantKeysSerialized.value);
   const uniformValuesDirty = computed(() => uniformValuesSerialized.value !== activeVariantValuesSerialized.value);
   const uniformsDirty = computed(() => uniformKeysDirty.value || uniformValuesDirty.value);
   const shaderDirty = computed(() => shader.value !== sketch.value?.shader);
   const isDirty = computed(() => uniformsDirty.value || shaderDirty.value);
+  const canAddVariant = computed(() => !tweening.value && uniformValuesDirty.value);
+
+  watch(
+    () => shuffleVariants.value,
+    (val) => {
+      clearInterval(variantShuffleInterval.value);
+      if (!val) return;
+      variantShuffleInterval.value = setInterval(selectNextVariant, 3050);
+    },
+    {
+      immediate: true,
+    }
+  );
 
   function selectSketch(value: Sketch, method: SelectionMethod = "pointer", internal: any = null) {
-    raf.remove("variant");
-    sketchSelectionMethod.value = method;
-    tweening.value = false;
-
     const currentId = sketch.value?._id;
 
+    raf.remove("variant");
+
+    sketchSelectionMethod.value = method;
+    tweening.value = false;
     sketch.value = clone(value);
     shader.value = value.shader;
 
@@ -151,38 +73,57 @@ export const useSketches = defineStore("sketches", () => {
     uniforms.value = clone(value.variants[variant.value]);
   }
 
-  function sampleSketches() {
-    selectSketch(sample(published.value) as any);
+  function selectVariant(i: number) {
+    if (!sketch.value) return;
+    variant.value = i;
+    tweenTo(sketch.value.variants[i]);
   }
 
-  function selectSketchById(id: string, method: SelectionMethod = "pointer") {
-    selectSketch(data[ITERATION_MAP[id]], method);
+  function tweenVariant(from: Variant, to: Variant, duration = shuffleVariants.value ? 2500 : 1000) {
+    const iVariant = buildVariantInterpolator(clone(from), clone(to));
+
+    tweening.value = true;
+
+    raf.add(
+      (now, progress) => {
+        const next = iVariant(progress);
+        uniformKeys.value.forEach((key) => {
+          uniforms.value[key].value = next[key].value;
+        });
+
+        if (progress === 1) tweening.value = false;
+      },
+      {
+        duration,
+        id: "variant",
+      }
+    );
+  }
+
+  function tweenTo(values: Variant, duration = shuffleVariants.value ? 2500 : 1000) {
+    tweenVariant(uniforms.value, values, duration);
+  }
+
+  function sampleSketches() {
+    selectSketch(sample(iterations.value) as any);
   }
 
   function selectSketchByIndex(i: number, method: SelectionMethod = "pointer") {
-    selectSketch(published.value[i], method);
+    selectSketch(iterations.value[i], method);
   }
 
   function selectPreviousSketch(method: SelectionMethod = "pointer") {
-    const last = pubLen.value - 1;
+    const last = iterations.value.length - 1;
     const target = index.value - 1;
     if (target === -1) return selectSketchByIndex(last, method);
     selectSketchByIndex(target, method);
   }
 
   function selectNextSketch(method: SelectionMethod = "pointer") {
-    const last = pubLen.value - 1;
+    const last = iterations.value.length - 1;
     const target = index.value + 1;
     if (target > last) return selectSketchByIndex(0, method);
     selectSketchByIndex(target, method);
-  }
-
-  function getSketchById(id: string) {
-    return data[ITERATION_MAP[id]];
-  }
-
-  function getStudyById(id: string) {
-    return studies.value[STUDY_MAP[id]];
   }
 
   function addUniform(e: AddUniformProps) {
@@ -199,59 +140,51 @@ export const useSketches = defineStore("sketches", () => {
     selectSketch(cloned, "internal");
   }
 
-  async function selectVariant(i: number) {
+  function selectNextVariant() {
     if (!sketch.value) return;
-    variant.value = i;
-    tweenVariant(uniforms.value, sketch.value.variants[i]);
-  }
-
-  function tweenVariant(from: Variant, to: Variant) {
-    const iVariant = buildVariantInterpolator(clone(from), clone(to));
-    raf.remove("variant");
-    tweening.value = true;
-    raf.add(
-      (now, progress) => {
-        uniforms.value = iVariant(progress);
-        if (progress === 1) tweening.value = false;
-      },
-      {
-        duration: 1000,
-        id: "variant",
-      }
-    );
+    const len = sketch.value?.variants.length;
+    if (variant.value + 1 === len) return selectVariant(0);
+    selectVariant(variant.value + 1);
   }
 
   function toggleShuffleVariants() {
     shuffleVariants.value = !shuffleVariants.value;
   }
 
-  function magicTween() {}
+  function magicTween(duration = 500) {
+    if (!sketch.value) return;
+    const source = sketch.value.variants[variant.value];
+    tweenTo(generateVariant(source), duration);
+  }
 
-  sampleSketches();
+  function startMagicInterval() {
+    clearInterval(magicInterval.value);
+    magicInterval.value = setInterval(() => {
+      magicTween(2000);
+    }, 2200);
+  }
+
+  function stopMagicInterval() {
+    clearInterval(magicInterval.value);
+  }
 
   return {
     sampleSketches,
     variant,
     sketch,
-    sketchId,
+    activeSketchId,
     shader,
     uniforms,
     shuffleVariants,
-    studies,
-    published,
-    selectSketchById,
     index,
     selectSketchByIndex,
     selectPreviousSketch,
     selectNextSketch,
-    getSketchById,
     selectVariant,
     tweening,
     toggleShuffleVariants,
     sketchSelectionMethod,
     addVariant,
-    iterations,
-    getStudyById,
     addUniform,
     uniformValues,
     shaderDirty,
@@ -259,12 +192,20 @@ export const useSketches = defineStore("sketches", () => {
     uniformKeys,
     uniformKeysSerialized,
     uniformValuesSerialized,
+    uniformValuesDirty,
     activeVariantKeys,
     activeVariantKeysSerialized,
     activeVariantValues,
     activeVariantValuesSerialized,
-    magicNumber,
-    magicTween,
     keyboardIndex,
+    selectSketch,
+    iterations,
+    shaderError,
+    magicTween,
+    tweenTo,
+    activeVariant,
+    startMagicInterval,
+    stopMagicInterval,
+    canAddVariant,
   };
 });

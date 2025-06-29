@@ -1,50 +1,32 @@
 <template>
-  <FormElement
+  <BaseInput
+    type="text"
     :label="label"
-    :disabled="disabled">
-    <input
-      type="text"
-      ref="input"
-      :value="modelValue"
-      :placeholder="placeholder"
-      @keypress="e => $emit('keypress', e)"
-      @keydown="e => $emit('keydown', e)"
-      @input="(e: any) => onInput(e)"
-      :disabled="disabled" />
-  </FormElement>
+    :model-value="modelValue"
+    :disabled="disabled"
+    :placeholder="placeholder"
+    :autofocus="autofocus"
+    @update:model-value="$emit('update:model-value', $event)"
+    @keypress="$emit('keypress', $event)"
+    @keydown="$emit('keydown', $event)">
+    <template #left>
+      <slot name="left" />
+    </template>
+    <template #right>
+      <slot name="right" />
+    </template>
+  </BaseInput>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import BaseInput from "./BaseInput.vue";
+import type { TextInputProps } from "../../types/form";
 
-import FormElement from "./FormElement.vue";
-
-const emit = defineEmits(["update:model-value", "keypress", "keydown"]);
-
-const props = defineProps<{
-  label?: string;
-  modelValue: string;
-  disabled?: boolean;
-  placeholder?: string;
-  autofocus?: boolean;
+defineEmits<{
+  "update:model-value": [value: any];
+  keypress: [event: KeyboardEvent];
+  keydown: [event: KeyboardEvent];
 }>();
 
-function onInput(e: any) {
-  emit("update:model-value", e.target.value);
-}
-
-const input = ref();
-
-onMounted(() => {
-  if (props.autofocus) {
-    input?.value?.focus?.();
-  }
-});
+defineProps<TextInputProps>();
 </script>
-
-<style lang="scss" scoped>
-input[type="text"] {
-  width: 10rem;
-  height: 1.5rem;
-}
-</style>

@@ -1,38 +1,42 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { useAPI } from "./api";
-import { useDebouncedSearch } from "../composables/useDebouncedSearch";
+import { api } from "../api/client";
+import { useDebouncedSearch } from "../composables/data/useDebouncedSearch";
 
 const RANGES = ["week", "month", "year"] as const;
 
 type Range = (typeof RANGES)[number];
 
 export const useAudius = defineStore("audius", () => {
-  const { get } = useAPI();
   const { query, results } = useDebouncedSearch(search);
   const trending = ref({
     tracks: { week: [], month: [], year: [] },
     playlists: { week: [], month: [], year: [] },
   });
 
-  function search(query: string) {
-    return get(`/audius/search/${query}`);
+  async function search(query: string) {
+    const response = await api.get(`/api/audius/search/${query}`);
+    return response.data;
   }
 
-  function fetchUser(handle: string) {
-    return get(`/audius/users/${handle}`);
+  async function fetchUser(handle: string) {
+    const response = await api.get(`/api/audius/users/${handle}`);
+    return response.data;
   }
 
-  function fetchPlaylistById(id: string) {
-    return get(`/audius/playlists/${id}`);
+  async function fetchPlaylistById(id: string) {
+    const response = await api.get(`/api/audius/playlists/${id}`);
+    return response.data;
   }
 
-  function fetchTrendingPlaylists(range: Range) {
-    return get(`/audius/playlists/trending/${range}`);
+  async function fetchTrendingPlaylists(range: Range) {
+    const response = await api.get(`/api/audius/playlists/trending/${range}`);
+    return response.data;
   }
 
   async function fetchTrendingTracks(range: Range) {
-    return get(`/audius/tracks/trending/${range}`);
+    const response = await api.get(`/api/audius/tracks/trending/${range}`);
+    return response.data;
   }
 
   async function fetchAllTrendingPlaylists() {

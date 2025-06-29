@@ -39,5 +39,5 @@ export const css: CSSOptions = {
 };
 
 export const optimizeDeps = {
-  include: ["markdown-it", "vue-markdown-render", "highlight.js"],
+  include: ["markdown-it", "vue-markdown-render", "highlight.js", "phone"],
 };

@@ -48,7 +48,7 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from "vue";
 import ChessMoveList from "./ChessMoveList.vue";
-import { useChessMatch } from "../../composables/useChessMatch";
+import { useChessMatch } from "../../composables";
 
 const props = defineProps<{
   size?: number;

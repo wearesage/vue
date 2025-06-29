@@ -1,44 +1,75 @@
-export * from "./useAnimation";
-export * from "./useAppliedVolume";
-export * from "./useArrowControlledRefHistory";
-export * from "./useArtboard";
-export * from "./useAudioAnalyser";
-export * from "./useAudioElement";
-export * from "./useAudiusUserWebsite";
-export * from "./useCanvas2d";
-export * from "./useChat";
-export * from "./useChessMatch";
-export * from "./useChessPieces";
-export * from "./useClickOnce";
-export * from "./useShaderEnvMap";
-export * from "./useD3Results";
-export * from "./useDebouncedSearch";
-export * from "./useDimensionalStyleShorthand";
-export * from "./useDropMultipleFiles";
-export * from "./useGLSLEditor";
-export * from "./useGetAudiusPlaylistById";
-export * from "./useGetAudiusUserByHandle";
-export * from "./useGetStudyById";
-export * from "./useMeta";
-export * from "./useNativeShare";
-export * from "./useNormalizedShaderError";
-export * from "./useOllama";
-export * from "./usePaddedFitContent";
-export * from "./usePageName";
-export * from "./usePaginatedCollection";
-export * from "./useParticleSystem";
-export * from "./useRandomAdeleTrack";
-export * from "./useRandomGreeting";
-export * from "./useRouteParamId";
-export * from "./useShader";
-export * from "./useShaderErrorDetection";
-export * from "./useShaderLayout";
-export * from "./useSlotNames";
-export * from "./useTabs";
-export * from "./useThrottledConsole";
-export * from "./useTresRender";
-export * from "./useTruthyNumber";
-export * from "./useTypedText";
-export * from "./useView";
-export * from "./useWithUnit";
-export * from "./useZoom";
+// Graphics & Visualization
+export * from "./graphics/useAnimation";
+export * from "./graphics/useArtboard";
+export * from "./graphics/useCanvas2d";
+export * from "./graphics/useGLSLEditor";
+export * from "./graphics/useGraph";
+export * from "./graphics/useNormalizedShaderError";
+export * from "./graphics/useParticleSystem";
+export * from "./graphics/useShader";
+export * from "./graphics/useShaderEnvMap";
+export * from "./graphics/useShaderErrorDetection";
+export * from "./graphics/useShaderLayout";
+export * from "./graphics/useTresRender";
+export * from "./graphics/useTruthyNumber";
+export * from "./graphics/useZoom";
+
+// Audio & Media
+export * from "./audio/useAppliedVolume";
+export * from "./audio/useAudioAnalyser";
+export * from "./audio/useAudioElement";
+export * from "./audio/useAudiusUserWebsite";
+export * from "./audio/useGetAudiusPlaylistById";
+export * from "./audio/useGetAudiusUserByHandle";
+export * from "./audio/useRandomAdeleTrack";
+
+// Games
+export * from "./games/useChessMatch";
+export * from "./games/useChessPieces";
+
+// AI & Chat
+export * from "./ai/useChat";
+export * from "./ai/useOllama";
+
+// UI Controls & Forms
+export * from "./ui/useClickOnce";
+export * from "./ui/useDimensionalStyleShorthand";
+export * from "./ui/usePaddedFitContent";
+export * from "./ui/useSlotNames";
+export * from "./ui/useTabs";
+export * from "./ui/useView";
+export * from "./ui/useWithUnit";
+
+// Data & Search
+export * from "./data/useD3Results";
+export * from "./data/useDebouncedSearch";
+export * from "./data/usePaginatedCollection";
+
+// Navigation & Routing
+export * from "./navigation/useMeta";
+export * from "./navigation/useNativeShare";
+export * from "./navigation/usePageName";
+export * from "./navigation/useRouteParamId";
+
+// Collaborative Spaces
+export * from "./spaces/useAggregateSpace";
+export * from "./spaces/useGlobalActiveUsers";
+
+// Collaboration
+export * from "./collaboration/useSharedCursors";
+export * from "./collaboration/useProjectCollaboration";
+
+// Auth
+export * from "./auth/useWallet";
+
+// App
+export * from "./app/useAppInitialization";
+
+// Utilities & Helpers
+export * from "./utilities/useArrowControlledRefHistory";
+export * from "./utilities/useDropMultipleFiles";
+export * from "./utilities/useStudies";
+export * from "./utilities/useRandomGreeting";
+export * from "./utilities/useReactiveValue";
+export * from "./utilities/useThrottledConsole";
+export * from "./utilities/useTypedText";

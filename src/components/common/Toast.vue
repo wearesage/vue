@@ -13,13 +13,14 @@ const toast = useToast();
 
 <style lang="scss" scoped>
 header {
-  @include position(fixed, 0.5rem null null 50%, 205);
+  @include position(fixed, 1rem null null 50%, 205);
   @include flex(center, center, row);
-  height: 3rem;
+  @include box(0.5 0.25 0.5 1, 0.5);
+  height: 2.5rem;
+  width: fit-content;
   opacity: 0;
-  transform: translateX(-50%) translateY(-100%) translateY(-0.5rem);
-  background: linear-gradient(to right, lighten(rgba(10, 10, 18, 1), 5%), darken(rgba(10, 10, 18, 1), 5%));
   pointer-events: none;
+  transform: translateX(-50%) translateY(calc(-100% - 1.5rem));
   transition: $transition;
   color: var(--white);
   padding: 0 1rem;
@@ -39,7 +40,7 @@ header {
 }
 
 .message {
-  background: linear-gradient(to right, lighten(rgba(10, 10, 18, 1), 5%), darken(rgba(10, 10, 18, 1), 5%));
+  background: $black;
 
   *::first-letter {
     color: var(--pink);

@@ -21,7 +21,7 @@
 <script setup lang="ts">
 import Row from "../layout/Row.vue";
 import Icon from "../common/Icon.vue";
-import { useAudiusUserWebsite } from "../../composables/useAudiusUserWebsite";
+import { useAudiusUserWebsite } from "../../composables";
 
 const props = defineProps<{ user: any }>();
 const website = useAudiusUserWebsite(props.user);

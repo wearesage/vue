@@ -315,6 +315,75 @@ export function cleanStudyIterations(studies: any[], validSketchIds: Set<string>
 }
 
 /**
+ * Transforms modern TresJS format to Shadertoy format
+ * Converts main() to mainImage() and updates uniforms to Shadertoy conventions
+ */
+export function transformToShadertoy(modernSketch: ModernSketch): ModernSketch {
+  let transformedShader = modernSketch.shader;
+  
+  // Convert main() function to mainImage(out vec4 fragColor, in vec2 fragCoord)
+  transformedShader = transformedShader.replace(
+    /void\s+main\s*\(\s*\)\s*\{/,
+    'void mainImage(out vec4 fragColor, in vec2 fragCoord) {'
+  );
+  
+  // Convert gl_FragColor to fragColor
+  transformedShader = transformedShader.replace(/gl_FragColor/g, 'fragColor');
+  
+  // Convert gl_FragCoord to fragCoord
+  transformedShader = transformedShader.replace(/gl_FragCoord/g, 'fragCoord');
+  
+  // Convert uniform names to Shadertoy conventions
+  const uniformMappings = {
+    'resolution': 'iResolution.xy',
+    'time': 'iTime',
+    'volume': 'iVolume',
+    'stream': 'iStream'
+  };
+  
+  // Apply uniform name transformations
+  Object.entries(uniformMappings).forEach(([oldName, newName]) => {
+    const regex = new RegExp(`\\b${oldName}\\b`, 'g');
+    transformedShader = transformedShader.replace(regex, newName);
+  });
+  
+  // Update variants to use Shadertoy uniform names
+  const transformedVariants = modernSketch.variants.map(variant => {
+    const newVariant: Variant = {};
+    
+    Object.entries(variant).forEach(([key, uniform]) => {
+      let newKey = key;
+      
+      // Transform uniform names in variants
+      if (key === 'resolution') {
+        newKey = 'iResolution';
+        // Convert vec2 to vec3 (add aspect ratio as .z)
+        if (Array.isArray(uniform.value) && uniform.value.length === 2) {
+          const [x, y] = uniform.value;
+          uniform.value = [x, y, x / y];
+        }
+      } else if (key === 'time') {
+        newKey = 'iTime';
+      } else if (key === 'volume') {
+        newKey = 'iVolume';
+      } else if (key === 'stream') {
+        newKey = 'iStream';
+      }
+      
+      newVariant[newKey] = uniform;
+    });
+    
+    return newVariant;
+  });
+  
+  return {
+    ...modernSketch,
+    shader: transformedShader,
+    variants: transformedVariants
+  };
+}
+
+/**
  * Main transformation function that converts a legacy sketch to modern format
  */
 export function transformLegacySketch(legacySketch: LegacySketch): ModernSketch {
@@ -347,4 +416,13 @@ export function transformLegacySketch(legacySketch: LegacySketch): ModernSketch 
     shader: transformedShader,
     variants: transformedVariants
   };
+}
+
+/**
+ * Full pipeline: Legacy → Modern → Shadertoy format
+ * Convenience function that applies both transformations
+ */
+export function transformLegacyToShadertoy(legacySketch: LegacySketch): ModernSketch {
+  const modernSketch = transformLegacySketch(legacySketch);
+  return transformToShadertoy(modernSketch);
 }

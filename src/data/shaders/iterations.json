@@ -1589,7 +1589,7 @@
   },
   {
     "_id": "66d11670577f4e8cedfc9ea5",
-    "shader": "void main () {\n  float stream = stream / 1.;\n  vec2 uv = k_uv();\n   uv *= zoom;\n  uv *= k_rotate2d(stream / -7.);\n  for (float i = 0.; i < 3.; i++) {\n    uv = uv * iterator;\n    vec3 col = k_rainbow(i / iterations, colorShift, colorOffset);\n    float a = radius * cos(uv.x);\n    float b = radius * sin(uv.y);\n    float c = radius * wave * sin(split * uv.x - stream /-.605);\n    float d = radius * wave * cos(split * uv.y  - stream / 0.6);\n    float x = a * b - c + d;\n    gl_FragColor += k_orb(uv, pow(volume, 1.2)/1.1 * orbSize, vec2(x, x),  col, contrast);\n  }\n  gl_FragColor = 1.-gl_FragColor;\n}",
+    "shader": "void main () {\n  float stream = stream / 1.;\n  vec2 uv = k_uv();\n   uv *= zoom;\n  uv *= k_rotate2d(stream / -7.);\n  for (float i = 0.; i < 3.; i++) {\n    uv = uv * iterator;\n    vec3 col = k_rainbow(i / iterations, colorShift, colorOffset);\n    float a = radius * cos(uv.x);\n    float b = radius * sin(uv.y);\n    float c = radius * wave * sin(split * uv.x - stream /-.605);\n    float d = radius * wave * cos(split * uv.y  - stream / 0.6);\n    float x = a * b - c + d;\n    gl_FragColor += k_orb(uv, pow(volume, 1.2)/1.1 * orbSize, vec2(x, x),  col, contrast);\n  }\n\n}",
     "variants": [
       {
         "zoom": {
@@ -3748,7 +3748,7 @@
   },
   {
     "_id": "66d11670577f4e8cedfc9eaa",
-    "shader": "void main () {\n  float stream = stream / 2.;\n  vec2 uv = k_uv();\n   uv *= zoom;\n  uv *= k_rotate2d(stream / -9.);\n  for (float i = 0.; i < 5.; i++) {\n    uv = uv * iterator;\n    vec3 col = k_rainbow(i / iterations, colorShift, colorOffset);\n    float a = radius * cos(uv.x + stream / 2.5);\n    float b = radius * sin(uv.y + stream);\n    float c = radius * wave * sin(split * uv.x - stream /-12.5);\n    float d = radius * wave * cos(split * uv.y  - stream / 11.5);\n    float x = a * b - c + d;\n    gl_FragColor += k_orb(uv, pow(volume, 1.2)/1.1 * orbSize, vec2(x, x),  col, contrast);\n  }\n  gl_FragColor = 1.-gl_FragColor;\n}",
+    "shader": "void main () {\n  float stream = stream / 2.;\n  vec2 uv = k_uv();\n   uv *= zoom;\n  uv *= k_rotate2d(stream / -9.);\n  for (float i = 0.; i < 5.; i++) {\n    uv = uv * iterator;\n    vec3 col = k_rainbow(i / iterations, colorShift, colorOffset);\n    float a = radius * cos(uv.x + stream / 2.5);\n    float b = radius * sin(uv.y + stream);\n    float c = radius * wave * sin(split * uv.x - stream /-12.5);\n    float d = radius * wave * cos(split * uv.y  - stream / 11.5);\n    float x = a * b - c + d;\n    gl_FragColor += k_orb(uv, pow(volume, 1.2)/1.1 * orbSize, vec2(x, x),  col, contrast);\n  }\n\n}",
     "variants": [
       {
         "zoom": {
@@ -4023,7 +4023,7 @@
   },
   {
     "_id": "66d11670577f4e8cedfc9ea8",
-    "shader": "void main () {\n  float stream = stream / 1.;\n  vec2 uv = k_uv();\n   uv *= zoom;\n  uv *= k_rotate2d(stream / -7.);\n  for (float i = 0.; i < 3.; i++) {\n    uv = uv * iterator;\n    vec3 col = k_rainbow(i / iterations, colorShift, colorOffset);\n    float a = radius * cos(uv.x);\n    float b = radius * sin(uv.y);\n    float c = radius * wave * sin(split * uv.x - stream /-.605);\n    float d = radius * wave * cos(split * uv.y  - stream / 2.125);\n    float x = a * b - c + d;\n    gl_FragColor += k_orb(uv, pow(volume, 1.2)/1.1 * orbSize, vec2(x, x),  col, contrast);\n  }\n  gl_FragColor = 1.-gl_FragColor;\n}",
+    "shader": "void main () {\n  float stream = stream / 1.;\n  vec2 uv = k_uv();\n   uv *= zoom;\n  uv *= k_rotate2d(stream / -7.);\n  for (float i = 0.; i < 3.; i++) {\n    uv = uv * iterator;\n    vec3 col = k_rainbow(i / iterations, colorShift, colorOffset);\n    float a = radius * cos(uv.x);\n    float b = radius * sin(uv.y);\n    float c = radius * wave * sin(split * uv.x - stream /-.605);\n    float d = radius * wave * cos(split * uv.y  - stream / 2.125);\n    float x = a * b - c + d;\n    gl_FragColor += k_orb(uv, pow(volume, 1.2)/1.1 * orbSize, vec2(x, x),  col, contrast);\n  }\n\n}",
     "variants": [
       {
         "zoom": {
@@ -4345,7 +4345,7 @@
   },
   {
     "_id": "66d11670577f4e8cedfc9ea9",
-    "shader": "void main () {\n  float stream = stream / 12.;\n  vec2 uv = k_uv();\n   uv *= zoom;\n  uv *= k_rotate2d(stream / -7.);\n  for (float i = 0.; i < 4.; i++) {\n    uv = uv * iterator;\n    vec3 col = k_rainbow(i / iterations, colorShift, colorOffset);\n    float a = radius * abs(.1+abs(tan((stream-uv.x + div))));\n    float b = radius * cos(stream + uv.y - div);\n    float c = radius * wave * sin(split * uv.x - stream /-.0605);\n    float d = radius * wave * cos(split * uv.y  - stream / 2.9125);\n    float x = a * b - c + d;\n    gl_FragColor += k_orb(uv, pow(volume, 1.2)/1.1 * orbSize, vec2(x, x),  col, contrast);\n  }\n  gl_FragColor = 1.-gl_FragColor;\n}",
+    "shader": "void main () {\n  float stream = stream / 12.;\n  vec2 uv = k_uv();\n   uv *= zoom;\n  uv *= k_rotate2d(stream / -7.);\n  for (float i = 0.; i < 4.; i++) {\n    uv = uv * iterator;\n    vec3 col = k_rainbow(i / iterations, colorShift, colorOffset);\n    float a = radius * abs(.1+abs(tan((stream-uv.x + div))));\n    float b = radius * cos(stream + uv.y - div);\n    float c = radius * wave * sin(split * uv.x - stream /-.0605);\n    float d = radius * wave * cos(split * uv.y  - stream / 2.9125);\n    float x = a * b - c + d;\n    gl_FragColor += k_orb(uv, pow(volume, 1.2)/1.1 * orbSize, vec2(x, x),  col, contrast);\n  }\n\n}",
     "variants": [
       {
         "zoom": {
@@ -6305,7 +6305,7 @@
   },
   {
     "_id": "66d11670577f4e8cedfc9ea4",
-    "shader": "void main () {\n  float stream = stream / 1.;\n  vec2 uv = k_uv();\n   uv *= zoom;\n  uv *= k_rotate2d(stream / -7.);\n  for (float i = 0.; i < 3.; i++) {\n    uv = uv * iterator;\n    vec3 col = k_rainbow(i / iterations, colorShift, colorOffset);\n    float a = radius * cos(uv.x);\n    float b = radius * sin(uv.y);\n    float c = radius * wave * sin(split * uv.x - stream /-.605);\n    float d = radius * wave * cos(split * uv.y  - stream / 0.6);\n    float x = a * b - c + d;\n    gl_FragColor += k_orb(uv, pow(volume, 1.2)/1.1 * orbSize, vec2(x, x),  col, contrast);\n  }\n  gl_FragColor = 1.-gl_FragColor;\n}",
+    "shader": "void main () {\n  float stream = stream / 1.;\n  vec2 uv = k_uv();\n   uv *= zoom;\n  uv *= k_rotate2d(stream / -7.);\n  for (float i = 0.; i < 3.; i++) {\n    uv = uv * iterator;\n    vec3 col = k_rainbow(i / iterations, colorShift, colorOffset);\n    float a = radius * cos(uv.x);\n    float b = radius * sin(uv.y);\n    float c = radius * wave * sin(split * uv.x - stream /-.605);\n    float d = radius * wave * cos(split * uv.y  - stream / 0.6);\n    float x = a * b - c + d;\n    gl_FragColor += k_orb(uv, pow(volume, 1.2)/1.1 * orbSize, vec2(x, x),  col, contrast);\n  }\n\n}",
     "variants": [
       {
         "zoom": {
@@ -7273,7 +7273,7 @@
   },
   {
     "_id": "66d11670577f4e8cedfc9eac",
-    "shader": "void main () {\n  float stream = stream / 12.;\n  vec2 uv = k_uv();\n   uv *= zoom;\n  uv *= k_rotate2d(stream / -7.);\n  for (float i = 0.; i < 5.; i++) {\n    uv = uv * iterator;\n    vec3 col = k_rainbow(i - iterations, colorShift, sin(length(uv/1.1)/1.1-stream/.015));\n    float a = radius * cos(uv.x * div);\n    float b = radius * cos(uv.y * div);\n    float c = wave * sin(split * uv.x - stream);\n    float d = wave * cos(split * uv.y  - stream);\n    float x = a * b - c + d;\n    gl_FragColor += k_orb(uv, pow(volume, 1.2)/1.1 * orbSize, vec2(x, x),  col, contrast);\n  }\n  gl_FragColor = 1.-gl_FragColor;\n}",
+    "shader": "void main () {\n  float stream = stream / 12.;\n  vec2 uv = k_uv();\n   uv *= zoom;\n  uv *= k_rotate2d(stream / -7.);\n  for (float i = 0.; i < 5.; i++) {\n    uv = uv * iterator;\n    vec3 col = k_rainbow(i - iterations, colorShift, sin(length(uv/1.1)/1.1-stream/.015));\n    float a = radius * cos(uv.x * div);\n    float b = radius * cos(uv.y * div);\n    float c = wave * sin(split * uv.x - stream);\n    float d = wave * cos(split * uv.y  - stream);\n    float x = a * b - c + d;\n    gl_FragColor += k_orb(uv, pow(volume, 1.2)/1.1 * orbSize, vec2(x, x),  col, contrast);\n  }\n\n}",
     "variants": [
       {
         "zoom": {

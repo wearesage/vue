@@ -1,0 +1,18 @@
+@use "./_position.scss" as *;
+@use "./_flex.scss" as *;
+@use "./_box.scss" as *;
+@use "./_cascade.scss" as *;
+
+@mixin fixed-menu {
+  @include position(absolute, 50% env(safe-area-inset-right) null null, 100);
+  @include flex-column(center, end);
+  @include box(1, 0.5);
+  transform: translateY(-50%);
+  width: fit-content;
+  overflow: hidden;
+  will-change: transform, opacity;
+
+  > * {
+    @include cascade;
+  }
+}

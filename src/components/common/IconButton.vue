@@ -4,7 +4,7 @@
     :is="to ? 'RouterLink' : href ? 'a' : 'button'"
     :to="to"
     :href="href"
-    @click="$emit('click')"
+    @click="e => $emit('click', e)"
     class="icon-button"
     :icon="icon"
     :class="{ propActive: active, disabled, small, label }"
@@ -30,7 +30,7 @@ defineProps<{
   href?: string;
   to?: string;
   small?: boolean;
-  label?: string;
+  label?: string | null;
 }>();
 </script>
 
@@ -43,12 +43,14 @@ a {
   flex-grow: 0;
   background: $black;
   border-radius: 3rem;
+  box-shadow: 0 2px 0 2px darken($black, 5%);
+  margin: 1px 0;
   padding: 0;
   cursor: pointer;
-  outline: 1px solid rgba($black, 0.3);
-
-  // box-shadow: inset 0 0 0 1px lighten($gray, 0%) !important;
+  outline: 1px solid rgba($purple, 0.5);
+  transition: $hover-transition;
   font-family: "Major Mono Display", monospace;
+
   * {
     pointer-events: none;
   }
@@ -60,7 +62,8 @@ a {
 
   &:hover {
     transform: none;
-    background: $black !important;
+    background: lighten($black, 3%);
+    color: $purple;
 
     svg {
       transform: scale(1);

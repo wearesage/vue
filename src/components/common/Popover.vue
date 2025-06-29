@@ -1,7 +1,7 @@
 <template>
   <transition name="fade">
     <aside
-      v-if="popover.visible"
+      v-if="popover.visible && popover.uniformKey"
       @click.stop
       :key="JSON.stringify([popover.uniformKey, popover.visible, popover.inputTextKey])"
       ref="element"
@@ -15,29 +15,24 @@
         :max="max"
         :step="step" />
 
-      <Toggle
-        :label="popover.uniformKey"
-        v-else-if="isBool"
-        v-model="sketches.uniforms[popover.uniformKey].value" />
-      <Row
-        center
-        v-else-if="popover.inputTextKey">
-        <TextInput
-          @keypress="onKeyPress"
-          v-model="popover.inputText"
-          :autofocus="true"
-          :placeholder="popover.inputTextKey" />
-        <IconButton
-          icon="save"
-          @click="popover.acceptText()"
-          :small="true" />
-      </Row>
+      <Toggle :label="popover.uniformKey" v-else-if="isBool" v-model="sketches.uniforms[popover.uniformKey].value" />
+
+      <TextInput
+        v-else-if="popover.inputTextKey"
+        @keypress="onKeyPress"
+        v-model="popover.inputText"
+        :autofocus="true"
+        :placeholder="popover.inputTextKey">
+        <template #right>
+          <IconButton icon="save" @click="popover.acceptText()" :small="true" />
+        </template>
+      </TextInput>
     </aside>
   </transition>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import { onClickOutside } from "@vueuse/core";
 import { usePopover, useToast } from "../../stores";
 import TextInput from "../forms/TextInput.vue";
@@ -45,7 +40,7 @@ import IconButton from "./IconButton.vue";
 import Row from "../layout/Row.vue";
 import RangeInput from "../forms/RangeInput.vue";
 import { useSketches } from "../../stores";
-import { rangeUtils } from "../../util/uniforms";
+import { uniformRangeUtils } from "../../util";
 import Toggle from "../forms/Toggle.vue";
 
 const toast = useToast();
@@ -70,9 +65,12 @@ watch(
   () => popover.uniformKey,
   key => {
     if (!key) return;
-    min.value = rangeUtils.getMin(popover.uniformKey, sketches.uniforms[key].value);
-    max.value = rangeUtils.getMax(popover.uniformKey, sketches.uniforms[key].value);
-    step.value = rangeUtils.getStep(popover.uniformKey);
+    if (!sketches.uniforms?.[key]) return;
+    if (typeof sketches.uniforms[key].value !== "number") return;
+    const value = (sketches.uniforms as any)[key].value;
+    min.value = uniformRangeUtils.getMin(popover.uniformKey, value);
+    max.value = uniformRangeUtils.getMax(popover.uniformKey, value);
+    step.value = uniformRangeUtils.getStep(popover.uniformKey, value);
   },
   {
     immediate: true
@@ -95,5 +93,9 @@ onClickOutside(element, () => {
   @include position(fixed, 0 null null 0, 100);
   border-radius: 1rem;
   transform-origin: center center;
+}
+
+.text {
+  background: var(--black);
 }
 </style>

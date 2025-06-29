@@ -1,13 +1,8 @@
 <template>
-  <FormElement
-    :class="{ open }"
-    :hide-label="open">
+  <FormElement ref="container" :label="label" :disabled="disabled" :class="{ open }" :hide-label="open">
     <Transition name="fade">
       <nav v-if="open">
-        <IconButton
-          class="close"
-          @click="close"
-          icon="close" />
+        <IconButton class="close" @click="close" icon="close" />
       </nav>
     </Transition>
     <div
@@ -17,9 +12,7 @@
       @mousedown="onPointerDown"
       @mousemove="onPointerMove"
       @mouseup="onPointerUp">
-      <input
-        type="color"
-        :value="value" />
+      <input type="color" :value="value" />
       <canvas ref="canvas" />
     </div>
   </FormElement>
@@ -30,17 +23,32 @@ import { ref, computed, onMounted, watch } from "vue";
 import FormElement from "./FormElement.vue";
 import { glslColorToHex, hslToHex, hexToHsl, hexToModelValue } from "../../util";
 import { useCanvas2d } from "../../composables";
-import { useRAF } from "../../stores";
 import IconButton from "../common/IconButton.vue";
 
-const emit = defineEmits(["update:modelValue", "pointerdown"]);
-const props = defineProps<{
-  modelValue?: any;
-  webgl?: boolean;
+const container = ref();
+
+defineExpose({ container });
+
+const emit = defineEmits<{
+  "update:model-value": [value: string | [number, number, number]];
+  pointerdown: [event: MouseEvent];
 }>();
 
-const value = computed(() => (props.webgl ? glslColorToHex(props.modelValue) : props.modelValue));
-const currentHsl = computed(() => hexToHsl(value.value));
+const props = withDefaults(
+  defineProps<{
+    label?: string;
+    modelValue: string | [number, number, number];
+    disabled?: boolean;
+    webgl?: boolean;
+  }>(),
+  {
+    disabled: false,
+    modelValue: "#000000"
+  }
+);
+
+const value = computed(() => (props.webgl ? glslColorToHex(props.modelValue as [number, number, number]) : props.modelValue));
+const currentHsl = computed(() => hexToHsl(value.value as string));
 
 const artboard = ref({
   width: 200,
@@ -86,13 +94,7 @@ function drawSaturationLightnessPicker(ctx: CanvasRenderingContext2D, width: num
   ctx.fillRect(0, 0, width, height);
 }
 
-function drawHueStrip(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  yOffset: number,
-  currentHue: number
-) {
+function drawHueStrip(ctx: CanvasRenderingContext2D, width: number, height: number, yOffset: number, currentHue: number) {
   const hueGradient = ctx.createLinearGradient(0, yOffset, width, yOffset);
   for (let i = 0; i <= 360; i += 30) {
     hueGradient.addColorStop(i / 360, hslToHex(i, 1, 0.5));
@@ -133,6 +135,7 @@ function drawHueIndicator(ctx: CanvasRenderingContext2D, width: number, height: 
 }
 
 function onPointerDown(e: MouseEvent) {
+  if (props.disabled) return;
   clicked.value = true;
   if (!canvas.value || !open.value) return;
 
@@ -160,13 +163,7 @@ function updateColorFromPointer(e: MouseEvent) {
   const { width, height } = artboard.value;
   const hueHeight = Math.floor(height * 0.1);
   const pickerHeight = height - hueHeight - 5;
-  const mode = clicked.value
-    ? interactionMode.value
-    : y <= pickerHeight
-    ? "saturation-lightness"
-    : y >= height - hueHeight
-    ? "hue"
-    : null;
+  const mode = clicked.value ? interactionMode.value : y <= pickerHeight ? "saturation-lightness" : y >= height - hueHeight ? "hue" : null;
 
   if (mode === "saturation-lightness") {
     const clampedX = Math.max(0, Math.min(width, x));
@@ -176,13 +173,13 @@ function updateColorFromPointer(e: MouseEvent) {
     const { s: saturationHSL, l: lightnessHSL } = hsvToHsl(currentHsl.value.h, saturationHSV, valueHSV);
     const newHex = hslToHex(currentHsl.value.h, saturationHSL, lightnessHSL);
     const newValue = hexToModelValue(newHex, !!props.webgl);
-    emit("update:modelValue", newValue);
+    emit("update:model-value", newValue);
   } else if (mode === "hue") {
     const clampedX = Math.max(0, Math.min(width, x));
     const hue = (clampedX / width) * 360;
     const newHex = hslToHex(hue, currentHsl.value.s, currentHsl.value.l);
     const newValue = hexToModelValue(newHex, !!props.webgl);
-    emit("update:modelValue", newValue);
+    emit("update:model-value", newValue);
   }
 }
 
@@ -218,6 +215,7 @@ function close(e: any) {
 }
 
 function activate(e: any) {
+  if (props.disabled) return;
   open.value = true;
 }
 </script>
@@ -241,8 +239,7 @@ input {
 div {
   @include flex-row;
   @include size(3.5rem, 1.5rem);
-  transition: width var(--transition-duration) var(--transition-easing),
-    height var(--transition-duration) var(--transition-easing);
+  transition: width var(--transition-duration) var(--transition-easing), height var(--transition-duration) var(--transition-easing);
   border-radius: 1.25rem;
   overflow: hidden;
 }

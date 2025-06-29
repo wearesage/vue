@@ -1,6 +1,14 @@
 <template>
   <div class="camera-container" :class="{ active: isActive }">
-    <video ref="videoRef" :autoplay="autoplay" :width="width * dpr" :height="height * dpr" :style="{ width: width + 'px', height: height + 'px' }" :muted="muted" :playsinline="playsinline" @loadedmetadata="onVideoLoaded" />
+    <video
+      ref="videoRef"
+      :autoplay="autoplay"
+      :width="width * dpr"
+      :height="height * dpr"
+      :style="{ width: width + 'px', height: height + 'px' }"
+      :muted="muted"
+      :playsinline="playsinline"
+      @loadedmetadata="onVideoLoaded" />
     <slot v-if="!isActive" name="inactive">
       <div class="row">
         <button @click="start"><WandIcon /></button>

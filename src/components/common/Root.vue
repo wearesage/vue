@@ -1,16 +1,19 @@
 <template>
-  <!-- <RouterView v-slot="{ Component, route }">
+  <RouterView v-slot="{ Component, route }">
     <transition :name="`view`">
-      <KeepAlive>
-        <component :is="Component" :key="route" />
-      </KeepAlive>
+      <component v-if="!auth.loading" :is="Component" :key="route" />
     </transition>
-  </RouterView> -->
 
-  <RouterView />
+    <transition :name="'view'">
+      <Loading v-if="auth.loading" />
+    </transition>
+  </RouterView>
 </template>
 
 <script setup lang="ts">
-// import { KeepAlive } from "vue";
 import { RouterView } from "vue-router";
+import { useAuth } from "../../stores";
+import Loading from "./Loading.vue";
+
+const auth = useAuth();
 </script>

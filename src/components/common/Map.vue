@@ -24,7 +24,15 @@ export type MapProps = {
   onMarkerClick?: Function;
 };
 
-const { center = [-85.75713102656687, 38.22991872594457], zoom = 13, pitch = 70, bearing = 20.954011069080245, width = 200, height = 200, markers = [] } = defineProps<MapProps>();
+const {
+  center = [-85.75713102656687, 38.22991872594457],
+  zoom = 13,
+  pitch = 70,
+  bearing = 20.954011069080245,
+  width = 200,
+  height = 200,
+  markers = []
+} = defineProps<MapProps>();
 
 watch(
   () => markers,

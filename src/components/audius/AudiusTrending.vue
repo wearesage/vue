@@ -30,6 +30,7 @@ const audius = useAudius();
 .scroll {
   @include flex-row(start, start);
   @include scroll-bar;
+  overflow-y: hidden;
   border-radius: 1rem;
   position: relative;
   width: 100%;

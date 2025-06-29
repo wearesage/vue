@@ -21,15 +21,3 @@ export const storage = {
   get,
   set,
 };
-
-export function createdNamespacedStorageHelpers(ns: string) {
-  return {
-    get(key: string) {
-      return get(`${ns}/${key}`);
-    },
-
-    set(key: string, data: unknown) {
-      return set(`${ns}/${key}`, data);
-    },
-  };
-}

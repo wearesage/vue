@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import { useRandomGreeting } from "../../composables/useRandomGreeting";
+import { useRandomGreeting } from "../../composables";
 
 const greeting = useRandomGreeting();
 </script>

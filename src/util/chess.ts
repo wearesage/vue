@@ -1,6 +1,5 @@
-import { clamp } from "./numbers";
+import { clamp, ease } from ".";
 import { interpolateNumber } from "d3-interpolate";
-import { ease } from "./ease";
 
 const BLACK = `rgba(10, 10, 10, 1)`;
 const WHITE = "rgba(255, 255, 255, 1)";
@@ -148,7 +147,13 @@ function calculatePawnMoves(pieces: ChessPiece[], piece: ChessPiece, gameState?:
     const enPassantRow = piece.color === "white" ? 3 : 4;
 
     // Check if last move was a pawn moving two squares
-    if (lastMove.piece.type === "pawn" && Math.abs(lastMove.from.row - lastMove.to.row) === 2 && lastMove.to.row === row && Math.abs(lastMove.to.col - col) === 1 && row === enPassantRow) {
+    if (
+      lastMove.piece.type === "pawn" &&
+      Math.abs(lastMove.from.row - lastMove.to.row) === 2 &&
+      lastMove.to.row === row &&
+      Math.abs(lastMove.to.col - col) === 1 &&
+      row === enPassantRow
+    ) {
       const enPassantSquare = { row: row + direction, col: lastMove.to.col };
       if (isValidSquare(enPassantSquare)) {
         moves.push(enPassantSquare);
@@ -283,7 +288,13 @@ function calculateKingMoves(pieces: ChessPiece[], piece: ChessPiece, gameState?:
     const kingsideRook = getPieceAt(pieces, { row, col: 7 });
     if (kingsideRook && kingsideRook.type === "rook" && kingsideRook.color === piece.color && !kingsideRook.hasMoved) {
       // Check if squares between king and rook are empty
-      if (!getPieceAt(pieces, { row, col: 5 }) && !getPieceAt(pieces, { row, col: 6 }) && !isSquareUnderAttack(pieces, { row, col: 4 }, piece.color) && !isSquareUnderAttack(pieces, { row, col: 5 }, piece.color) && !isSquareUnderAttack(pieces, { row, col: 6 }, piece.color)) {
+      if (
+        !getPieceAt(pieces, { row, col: 5 }) &&
+        !getPieceAt(pieces, { row, col: 6 }) &&
+        !isSquareUnderAttack(pieces, { row, col: 4 }, piece.color) &&
+        !isSquareUnderAttack(pieces, { row, col: 5 }, piece.color) &&
+        !isSquareUnderAttack(pieces, { row, col: 6 }, piece.color)
+      ) {
         moves.push({ row, col: 6 });
       }
     }
@@ -347,7 +358,15 @@ export function isEnPassantMove(piece: ChessPiece, from: Square, to: Square, gam
   const lastMove = gameState.lastMove;
   const captureRow = piece.color === "white" ? 3 : 4;
 
-  return from.row === captureRow && to.row === (piece.color === "white" ? 2 : 5) && Math.abs(from.col - to.col) === 1 && lastMove.piece.type === "pawn" && Math.abs(lastMove.from.row - lastMove.to.row) === 2 && lastMove.to.col === to.col && lastMove.to.row === from.row;
+  return (
+    from.row === captureRow &&
+    to.row === (piece.color === "white" ? 2 : 5) &&
+    Math.abs(from.col - to.col) === 1 &&
+    lastMove.piece.type === "pawn" &&
+    Math.abs(lastMove.from.row - lastMove.to.row) === 2 &&
+    lastMove.to.col === to.col &&
+    lastMove.to.row === from.row
+  );
 }
 
 export function drawBoard({ clear, normalize, draw, size: s, animations, selectedPiece }: any) {
@@ -605,7 +624,14 @@ export function getPieceSymbol(piece: ChessPiece): string {
   }
 }
 
-export function getMoveNotation(piece: ChessPiece, from: Square, to: Square, captured: boolean, pieces: ChessPiece[], gameState?: GameState): string {
+export function getMoveNotation(
+  piece: ChessPiece,
+  from: Square,
+  to: Square,
+  captured: boolean,
+  pieces: ChessPiece[],
+  gameState?: GameState
+): string {
   // Handle castling
   if (piece.type === "king" && isCastlingMove(from, to)) {
     return to.col === 6 ? "O-O" : "O-O-O"; // Kingside or queenside castling

@@ -1,57 +1,50 @@
 <template>
-  <fieldset>
-    <label v-if="label">{{ label }}</label>
-    <select @change="onChange" :value="value">
+  <FormElement :label="label" :disabled="disabled">
+    <select @change="onInput" :value="modelValue">
       <option value="">Select Columns</option>
-      <option v-for="(opt, i) in options" :value="opt.value" :key="`${opt.text}-${i}`" :selected="opt.value === opt">
-        {{ opt.text }}
+      <option
+        v-for="(opt, i) in options"
+        :value="opt?.value || opt"
+        :key="`${opt?.label || opt}-${i}`"
+        :selected="(opt?.value || opt) === modelValue">
+        {{ opt?.label || opt }}
       </option>
     </select>
-
-    <Button>
-      <Icon name="chevron-down" />
-    </Button>
-  </fieldset>
+  </FormElement>
 </template>
 
 <script setup lang="ts">
-import Button from "../common/Button.vue";
-import Icon from "../common/Icon.vue";
-import type { SelectOption } from "../../util/forms";
+import { onMounted, ref } from "vue";
 
-defineProps<{ options: SelectOption[]; value?: any; label?: string }>();
+import FormElement from "./FormElement.vue";
+import type { SelectProps } from "../../types/form";
 
-const $emit = defineEmits(["select"]);
+const emit = defineEmits<{
+  "update:model-value": [value: string];
+  keypress: [event: KeyboardEvent];
+  keydown: [event: KeyboardEvent];
+}>();
 
-function onChange(e: any) {
-  $emit("select", e.target.value);
+const props = defineProps<SelectProps>();
+
+function onInput(e: any) {
+  emit("update:model-value", e.target.value);
 }
+
+const input = ref();
+
+onMounted(() => {
+  if (props.autofocus) {
+    input?.value?.focus?.();
+  }
+});
 </script>
 
 <style lang="scss" scoped>
-fieldset {
-  @include flex-row;
-  @include gap(0.5);
-  width: var(--text-input-width);
-  position: relative;
-}
-
-label {
-  font-size: 0.8rem;
-  font-weight: 200;
-  opacity: 0.5;
-  text-transform: uppercase;
-}
-
 select {
-  @include form-element;
-  width: 100%;
+  @include form-input;
   padding-right: 2rem;
-}
-
-button {
-  @include position(absolute, 50% 1rem 0 null);
-  @include flex;
-  transform: translateY(-50%);
+  cursor: pointer;
+  appearance: none;
 }
 </style>

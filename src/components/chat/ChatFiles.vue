@@ -1,11 +1,19 @@
 <template>
   <ul class="chat-files">
-    <li v-for="(file, i) in files" :key="i" :class="{ [file.type]: true }">
-      <button @click="$emit('remove')" class="rm">
-        <Close />
-      </button>
-      <figure v-if="file.type === 'image/jpeg' || 'image/png' || 'image/gif'" @click="remove(i)">
-        <img v-if="base64[i]" :src="base64[i]" />
+    <li
+      v-for="(file, i) in files"
+      :key="i"
+      :class="{ [file.type]: true }">
+      <IconButton
+        @click="$emit('remove')"
+        class="rm"
+        icon="close" />
+      <figure
+        v-if="file.type === 'image/jpeg' || 'image/png' || 'image/gif'"
+        @click="remove(i)">
+        <img
+          v-if="base64[i]"
+          :src="base64[i]" />
       </figure>
     </li>
   </ul>
@@ -13,8 +21,8 @@
 
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import Close from "../../assets/icons/close.svg";
-import { imageToBase64 } from "../../util/files";
+import { imageToBase64 } from "../../util";
+import IconButton from "../common/IconButton.vue";
 
 const props = defineProps<{
   files: File[] | null;

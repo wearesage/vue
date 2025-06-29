@@ -1,9 +1,5 @@
 <template>
-  <component
-    v-bind="$attrs"
-    class="column"
-    :is="is"
-    :class="{ center, cascade }">
+  <component v-bind="$attrs" class="column" :is="is" :class="{ center, cascade }">
     <slot />
   </component>
 </template>

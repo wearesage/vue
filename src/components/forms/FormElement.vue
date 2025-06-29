@@ -1,22 +1,21 @@
 <template>
-  <Row
-    class="form-element"
-    :class="{ disabled: disabled === true }">
+  <Row ref="el" class="form-element" :class="{ disabled: disabled === true }">
     <slot name="label">
-      <label
-        v-if="label"
-        :class="{ hidden: hideLabel }"
-        >{{ label }}</label
-      >
+      <label v-if="label" :class="{ hidden: hideLabel }">{{ label }}</label>
     </slot>
     <slot />
   </Row>
 </template>
 
 <script setup lang="ts">
+import { ref, computed, defineExpose } from "vue";
 import Row from "../layout/Row.vue";
 
+const el = ref<any>();
+const element = computed(() => el.value?.element?.value);
+
 defineProps<{ label?: string; disabled?: boolean; hideLabel?: boolean }>();
+defineExpose({ element });
 </script>
 
 <style lang="scss" scoped>

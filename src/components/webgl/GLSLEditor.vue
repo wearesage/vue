@@ -1,13 +1,10 @@
 <template>
-  <aside
-    ref="container"
-    @animationend="onAnimationEnd"
-    :class="{ 'no-animate': noAnimate }"></aside>
+  <aside ref="container" @animationend="onAnimationEnd" :class="{ 'no-animate': noAnimate }"></aside>
 </template>
 
 <script setup lang="ts">
 import { ref, toRefs } from "vue";
-import { useGLSLEditor } from "../../composables/useGLSLEditor";
+import { useGLSLEditor } from "../../composables";
 
 const props = defineProps<{
   modelValue: string;
@@ -39,8 +36,17 @@ function onAnimationEnd() {
 
 <style lang="scss" scoped>
 aside {
-  @include position(fixed, 50% null null 0, 10);
-  transform: translateY(-50%);
+  @include position(fixed, 0 null null 0, 10);
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+aside :deep(.cm-editor) {
+  pointer-events: auto;
+  max-height: 100vh;
+  overflow: hidden;
 }
 </style>
 
@@ -87,14 +93,8 @@ aside {
   outline: none !important;
 }
 
-.cm-line {
-  max-width: 70vw;
-  overflow-x: scroll;
-  @include hide-scroll-bar;
-}
-
 .cm-line:not(.cm-comment-line) {
-  border-bottom: 1px solid var(--white-10);
+  border-bottom: 1px solid var(--white-10) !important;
   background: rgba($black, 0.9) !important;
 }
 
@@ -102,20 +102,24 @@ aside {
   cursor: pointer;
 }
 
-.cm-line {
-  @include cascade(500);
-  transform-origin: top left;
+.cm-content {
+  width: auto;
+  max-width: 100vw;
 }
 
-.no-animate .cm-line {
-  animation: none !important;
-  opacity: 1 !important;
+.cm-line {
+  transform-origin: top left;
+  line-height: 1rem;
 }
 
 .cm-scroller {
-  max-height: 100vh;
-  overflow-y: scroll !important;
   @include hide-scroll-bar;
+}
+
+.cm-gutters {
+  @include mobile {
+    display: none !important;
+  }
 }
 
 html body .cm-content {

@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ref, type Ref } from "vue";
-import { pause } from "../util/time";
+import { pause } from "../util";
 
 const TOAST_TIMEOUT = 5000;
 

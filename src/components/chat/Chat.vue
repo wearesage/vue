@@ -1,10 +1,23 @@
 <template>
-  <section class="chat" ref="container">
+  <section
+    class="chat"
+    ref="container">
     <Transition name="fade">
       <ChatGreeting v-if="messages.length === 0" />
     </Transition>
-    <ChatMessages @tool-call="callTool" @remove="removeMessage" :messages="messages" :sketch="sketch" :model="model" ref="chat" />
-    <ChatInput @submit="streamMessage" @new-chat="startNewChat" @remove="remove" :files="files" :messages="messages" />
+    <ChatMessages
+      @tool-call="callTool"
+      @remove="removeMessage"
+      :messages="messages"
+      :sketch="sketch"
+      :model="model"
+      ref="chat" />
+    <ChatInput
+      @submit="streamMessage"
+      @new-chat="startNewChat"
+      @remove="remove"
+      :files="files"
+      :messages="messages" />
   </section>
 </template>
 
@@ -13,8 +26,7 @@ import { ref } from "vue";
 import ChatGreeting from "./ChatGreeting.vue";
 import ChatMessages from "./ChatMessages.vue";
 import ChatInput from "./ChatInput.vue";
-import { useDropMultipleFiles } from "../../composables/useDropMultipleFiles";
-import { useChat } from "../../composables/useChat";
+import { useDropMultipleFiles, useChat } from "../../composables";
 
 const props = defineProps<{ sketch?: any }>();
 const chat = ref();

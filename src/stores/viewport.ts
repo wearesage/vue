@@ -4,7 +4,6 @@ import { createCssVariable, coord } from "../util";
 import { useFullscreen } from "@vueuse/core";
 
 export const useViewport = defineStore("viewport", () => {
-  const { isFullscreen, exit: exitFullscreen, enter: enterFullscreen, isSupported: fullscreenSupported } = useFullscreen();
   const width = ref(window.innerWidth);
   const height = ref(window.innerHeight);
   const aspectRatio = computed(() => width.value / height.value);
@@ -12,6 +11,17 @@ export const useViewport = defineStore("viewport", () => {
   const clicked = ref(coord(-1, -1));
   const mouse = ref(coord(-1, -1));
   const touch = ref("ontouchstart" in window);
+  const scrollY = ref(0);
+  const scrollPosition = ref(coord(0, 0)); // Actual scroll position
+  const { isFullscreen, exit: exitFullscreen, enter: enterFullscreen, isSupported: fullscreenSupported } = useFullscreen();
+
+  async function onScroll(e: number) {
+    scrollY.value += e;
+  }
+
+  function setScrollPosition(x: number, y: number) {
+    scrollPosition.value = coord(x, y);
+  }
 
   function set() {
     width.value = window.innerWidth;
@@ -20,6 +30,12 @@ export const useViewport = defineStore("viewport", () => {
     touch.value = "ontouchstart" in window;
     createCssVariable("--viewport-width", `${width.value}px`);
     createCssVariable("--viewport-height", `${height.value}px`);
+  }
+
+  function mouseMove(e: MouseEvent) {
+    const x = e.clientX;
+    const y = e.clientY;
+    mouse.value = coord(x, y);
   }
 
   function triggerMouse() {
@@ -39,14 +55,10 @@ export const useViewport = defineStore("viewport", () => {
 
   window.addEventListener("resize", set);
 
-  document.body.addEventListener("click", (e) => {
+  document.body.addEventListener("pointerdown", (e) => {
     const [x, y] = [e.clientX, e.clientY];
     clicked.value = coord(x, y);
-  });
-
-  document.body.addEventListener("mousemove", (e) => {
-    const [x, y] = [e.clientX, e.clientY];
-    mouse.value = coord(x, y);
+    triggerMouse();
   });
 
   return {
@@ -59,5 +71,10 @@ export const useViewport = defineStore("viewport", () => {
     triggerMouse,
     toggleFullscreen,
     fullscreenSupported,
+    mouseMove,
+    scrollY,
+    scrollPosition,
+    onScroll,
+    setScrollPosition,
   };
 });

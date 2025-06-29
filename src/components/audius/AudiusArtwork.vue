@@ -7,8 +7,8 @@
 </template>
 
 <script setup lang="ts">
-const { size = '240px' } = defineProps<{
-  size?: string,
+const { size = "240px" } = defineProps<{
+  size?: string;
   item: {
     title: string;
     playlist_name: string;

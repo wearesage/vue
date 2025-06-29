@@ -4,13 +4,10 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
-import { useRAF } from "../../stores/raf";
-import { useViewport } from "../../stores/viewport";
-import { useCanvas2d } from "../../composables/useCanvas2d";
 import { interpolateNumber, interpolateRgb } from "d3-interpolate";
-import { ease } from "../../util/ease";
-import { clamp } from "../../util/numbers";
-import { useAnimation } from "../../composables/useAnimation";
+import { useRAF, useViewport } from "../../stores";
+import { useCanvas2d, useAnimation } from "../../composables";
+import { ease, clamp } from "../../util";
 
 const props = defineProps<{
   volume?: number;

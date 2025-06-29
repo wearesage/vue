@@ -1,0 +1,2 @@
+export const VITE_REOWN_PROJECT_ID = import.meta.env.VITE_REOWN_PROJECT_ID || "b56e18d47c72ab683b10814fe9495694";
+export const VITE_DEFAULT_AUTHENTICATED_VIEW = import.meta.env.VITE_DEFAULT_AUTHENTICATED_VIEW || "/visualizer";

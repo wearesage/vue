@@ -1,16 +1,10 @@
 <template>
-  <div
-    class="vinyl"
-    :class="{ playing }">
+  <div class="vinyl" :class="{ playing }">
     <div class="overlays"></div>
     <div class="hole"></div>
-    <img
-      class="bg"
-      src="../../assets/images/vinyl.png" />
+    <img class="bg" src="../../assets/images/vinyl.png" />
     <div class="center">
-      <img
-        class="album"
-        :src="src" />
+      <img class="album" :src="src" />
       <div class="inner"></div>
       <div class="inner-2"></div>
     </div>

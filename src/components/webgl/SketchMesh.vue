@@ -1,17 +1,9 @@
 <template>
-  <TresMesh
-    ref="mesh"
-    @click="$emit('select')"
-    :visible="scale > 0"
-    :position="position"
-    :scale="scale">
+  <TresMesh ref="mesh" @click="$emit('select')" :visible="scale > 0" :position="position" :scale="scale">
     <slot>
       <TresPlaneGeometry :args="[aspectRatio, 1]" />
     </slot>
-    <TresShaderMaterial
-      :vertex-shader="vertexShader"
-      :fragment-shader="fragmentShader"
-      :uniforms="uniforms" />
+    <TresShaderMaterial :side="0" :vertex-shader="vertexShader" :fragment-shader="fragmentShader" :uniforms="uniforms" />
   </TresMesh>
 </template>
 
