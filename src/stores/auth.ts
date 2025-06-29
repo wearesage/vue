@@ -202,11 +202,12 @@ export const useAuth = defineStore("auth", () => {
       await validateStoredToken();
       isHydrated.value = true;
     } finally {
-      loading.value = false;
-      if (isAuthenticated.value && route.fullPath === "/") {
+      // Don't redirect if we're handling an OAuth callback
+      if (isAuthenticated.value && route.fullPath === "/" && !route.query.spotify) {
         _authDetermined?.(isAuthenticated.value);
         router.replace(VITE_DEFAULT_AUTHENTICATED_VIEW);
       }
+      loading.value = false;
     }
   }
 

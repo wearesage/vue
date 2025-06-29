@@ -3,7 +3,7 @@
     <slot name="left" />
     <input
       ref="input"
-      :type="type"
+      type="number"
       :value="modelValue"
       :placeholder="placeholder"
       :disabled="disabled"
@@ -20,19 +20,17 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import FormElement from "./FormElement.vue";
-import type { InputType } from "../../types/form";
 
 const emit = defineEmits<{
-  "update:model-value": [value: string];
+  "update:model-value": [value: number];
   keypress: [event: KeyboardEvent];
   keydown: [event: KeyboardEvent];
 }>();
 
 const props = withDefaults(
   defineProps<{
-    type?: InputType;
     label?: string;
-    modelValue: string;
+    modelValue: number;
     disabled?: boolean;
     placeholder?: string;
     autofocus?: boolean;
@@ -41,7 +39,6 @@ const props = withDefaults(
     step?: string | number;
   }>(),
   {
-    type: "text",
     disabled: false,
     autofocus: false,
   }
@@ -51,7 +48,8 @@ const input = ref<HTMLInputElement>();
 
 function onInput(e: Event) {
   const target = e.target as HTMLInputElement;
-  emit("update:model-value", target.value);
+  const value = Number(target.value);
+  emit("update:model-value", value);
 }
 
 onMounted(() => {

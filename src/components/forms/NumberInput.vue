@@ -1,6 +1,5 @@
 <template>
-  <BaseInput
-    type="number"
+  <BaseNumberInput
     :label="label"
     :model-value="modelValue"
     :disabled="disabled"
@@ -18,15 +17,15 @@
     <template #right>
       <slot name="right" />
     </template>
-  </BaseInput>
+  </BaseNumberInput>
 </template>
 
 <script setup lang="ts">
-import BaseInput from "./BaseInput.vue";
+import BaseNumberInput from "./BaseNumberInput.vue";
 import type { NumberInputProps } from "../../types/form";
 
-const $emit = defineEmits<{
-  "update:model-value": [value: any];
+defineEmits<{
+  "update:model-value": [value: number];
   keypress: [event: KeyboardEvent];
   keydown: [event: KeyboardEvent];
 }>();

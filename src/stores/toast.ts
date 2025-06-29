@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { ref, type Ref } from "vue";
 import { pause } from "../util";
 
-const TOAST_TIMEOUT = 5000;
+const TOAST_TIMEOUT = 3000;
 
 export const useToast = defineStore("toast", () => {
   const type: Ref<"message" | "error" | null> = ref(null);

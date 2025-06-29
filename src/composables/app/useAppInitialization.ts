@@ -1,10 +1,9 @@
-import { onMounted, computed } from "vue";
+import { onMounted } from "vue";
 import { useAuth, useSocketCore, useUserState } from "../../stores";
 
 export function useAppInitialization() {
   const auth = useAuth();
   const socket = useSocketCore();
-  const authenticated = computed(() => auth.isAuthenticated);
 
   useUserState();
 
@@ -20,7 +19,12 @@ export function useAppInitialization() {
     }
   });
 
+  const promise = new Promise(async (resolve) => {
+    await auth.authDetermined;
+    resolve(auth.isAuthenticated);
+  });
+
   return {
-    authenticated,
+    promise,
   };
 }
