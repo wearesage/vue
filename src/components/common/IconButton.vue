@@ -1,27 +1,40 @@
 <template>
-  <component
-    :style="{ background: background || 'var(--black)' }"
-    :is="to ? 'RouterLink' : href ? 'a' : 'button'"
-    :to="to"
+  <a
+    v-if="href"
     :href="href"
-    @click="e => $emit('click', e)"
+    target="_blank"
+    rel="noopener noreferrer"
+    :style="{ background: background || 'var(--black)' }"
     class="icon-button"
-    :icon="icon"
     :class="{ propActive: active, disabled, small, label }"
-    v-bind="$attrs">
+    v-bind="$attrs"
+  >
     <span v-if="label">
       {{ label }}
     </span>
     <Icon :icon="icon" />
-  </component>
+  </a>
+  <button
+    v-else
+    :style="{ background: background || 'var(--black)' }"
+    @click="handleClick"
+    class="icon-button"
+    :class="{ propActive: active, disabled, small, label }"
+    v-bind="$attrs"
+  >
+    <span v-if="label">
+      {{ label }}
+    </span>
+    <Icon :icon="icon" />
+  </button>
 </template>
 
 <script setup lang="ts">
 import Icon from "./Icon.vue";
+import { useRouter } from "../../router/sage-router";
 
-defineEmits(["click"]);
-
-defineProps<{
+const emit = defineEmits(["click"]);
+const props = defineProps<{
   icon: any;
   background?: string;
   disabled?: boolean;
@@ -32,6 +45,17 @@ defineProps<{
   small?: boolean;
   label?: string | null;
 }>();
+
+const router = useRouter();
+
+function handleClick(e: Event) {
+  if (props.to) {
+    router.push(props.to);
+  } else {
+    // Emit click for regular button behavior
+    emit('click', e);
+  }
+}
 </script>
 
 <style lang="scss" scoped>

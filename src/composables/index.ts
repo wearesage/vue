@@ -63,7 +63,7 @@ export * from "./collaboration/useProjectCollaboration";
 export * from "./auth/useWallet";
 
 // App
-export * from "./app/useAppInitialization";
+// export * from "./app/useAppInitialization"; // DELETED - no longer needed with Sage Router!
 
 // Utilities & Helpers
 export * from "./utilities/useArrowControlledRefHistory";

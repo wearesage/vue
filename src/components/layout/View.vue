@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import { useRoute } from "vue-router";
+import { useRoute } from "../../router/sage-router";
 import { onMounted, ref } from "vue";
 import { useViewport, useRAF } from "../../stores";
 import { interpolateBasis } from "d3-interpolate";
@@ -45,7 +45,7 @@ const VELOCITY_HISTORY_LIMIT = 5;
 
 function onScroll(e: any) {
   localStorage.setItem(LS_KEY.value, `${e.target.scrollTop}`);
-  
+
   // Update viewport with actual scroll position
   viewport.setScrollPosition(e.target.scrollLeft || 0, e.target.scrollTop || 0);
 }

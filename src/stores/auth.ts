@@ -1,9 +1,10 @@
 import { defineStore } from "pinia";
 import { ref, computed, watch, nextTick } from "vue";
-import { useRouter, useRoute } from "vue-router";
+import { useRouter, useRoute } from "../router/sage-router";
 import { api } from "../api/client";
 import { useToast } from "./toast";
 import { useWallet } from "../composables/auth/useWallet";
+import { useSocketCore } from "./socket-core";
 import { VITE_DEFAULT_AUTHENTICATED_VIEW } from "../constants/env";
 
 export const useAuth = defineStore("auth", () => {
@@ -14,22 +15,10 @@ export const useAuth = defineStore("auth", () => {
   const authToken = ref<string | null>(localStorage.getItem("authToken"));
   const refreshToken = ref<string | null>(localStorage.getItem("refreshToken"));
   const user = ref<any>(JSON.parse(localStorage.getItem("user") || "null"));
-  const loading = ref(true);
+  const loading = ref(false);
   const isAuthenticating = ref(false);
-  const isHydrated = ref(false);
-  const hydratedTokenValid = ref(false);
 
-  let _authDetermined: any;
-
-  let authDetermined = new Promise((resolve) => {
-    _authDetermined = resolve;
-  });
-
-  const isAuthenticated = computed(
-    () =>
-      (isHydrated.value && hydratedTokenValid.value && !!authToken.value && !!user.value) ||
-      (!isHydrated.value && !!authToken.value && !!user.value)
-  );
+  const isAuthenticated = computed(() => !!authToken.value && !!user.value);
 
   const walletAddress = computed(() => user.value?.walletAddress || null);
 
@@ -61,15 +50,7 @@ export const useAuth = defineStore("auth", () => {
     { deep: true }
   );
 
-  watch(
-    isAuthenticated,
-    (authenticated) => {
-      if (authenticated && route.fullPath === "/") {
-        router.replace(VITE_DEFAULT_AUTHENTICATED_VIEW);
-      }
-    },
-    { immediate: true }
-  );
+  // Removed router logic - moved to Root.vue where it belongs!
 
   async function validateStoredToken(): Promise<boolean> {
     const token = localStorage.getItem("authToken");
@@ -77,19 +58,67 @@ export const useAuth = defineStore("auth", () => {
     if (!token) return false;
 
     try {
-      const response = await api.get("/api/auth/validate");
+      // Socket-first token validation
+      const socketCore = useSocketCore();
 
-      if (response.data?.user) {
-        user.value = response.data.user;
-        hydratedTokenValid.value = true;
-        return true;
+      // Ensure socket is connected
+      if (!socketCore.connected) {
+        await socketCore.connect();
       }
+      await socketCore.waitForConnection();
 
-      hydratedTokenValid.value = false;
-      return false;
+      return new Promise<boolean>((resolve) => {
+        // Set up listeners for socket validation response
+        const handleSuccess = ({ user: userData }: any) => {
+          user.value = userData;
+          cleanup();
+          resolve(true);
+        };
+
+        const handleInvalid = () => {
+          clearAuthState();
+          cleanup();
+          resolve(false);
+        };
+
+        // Cleanup function
+        const cleanup = () => {
+          socketCore.off("auth:success", handleSuccess);
+          socketCore.off("auth:invalid", handleInvalid);
+        };
+
+        // Set up socket listeners
+        socketCore.on("auth:success", handleSuccess);
+        socketCore.on("auth:invalid", handleInvalid);
+
+        // Send token validation request (after connection is established)
+        console.log("🔑 Sending token validation request...");
+        socketCore.emit("auth:validate-token", token);
+
+        // Timeout after 5 seconds and fall back to HTTP
+        setTimeout(() => {
+          cleanup();
+          console.log("Socket validation timeout, falling back to HTTP");
+
+          // HTTP fallback
+          api
+            .get("/api/auth/validate")
+            .then((response) => {
+              if (response.data?.user) {
+                user.value = response.data.user;
+                resolve(true);
+              } else {
+                resolve(false);
+              }
+            })
+            .catch((error) => {
+              if (error.response?.status === 401) clearAuthState();
+              resolve(false);
+            });
+        }, 5000);
+      });
     } catch (error: any) {
-      if (error.response?.status === 401) clearAuthState();
-      hydratedTokenValid.value = false;
+      console.error("Token validation error:", error);
       return false;
     }
   }
@@ -98,84 +127,101 @@ export const useAuth = defineStore("auth", () => {
     authToken.value = null;
     refreshToken.value = null;
     user.value = null;
-    hydratedTokenValid.value = false;
     localStorage.removeItem("authToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
+
+    // Clean up any lingering socket auth listeners
+    const socketCore = useSocketCore();
+    socketCore.off("auth:success");
+    socketCore.off("auth:challenge-response");
+    socketCore.off("auth:error");
+    socketCore.off("auth:invalid");
   }
 
   async function signIn() {
     try {
       isAuthenticating.value = true;
-      if (!wallet.isConnected.value) {
+
+      // Get wallet address and signature (simple imperative flow)
+      if (!wallet.isConnected) {
         await wallet.connect();
-        await new Promise<void>((resolve) => {
-          const unwatch = watch(
-            () => wallet.isConnected.value,
-            (connected) => {
-              if (connected) {
-                unwatch();
-                resolve();
-              }
+      }
+
+      const walletAddress = wallet.address.value;
+      if (!walletAddress) {
+        toast.error("Failed to connect wallet");
+        return;
+      }
+
+      // Socket-first authentication
+      const socketCore = useSocketCore();
+
+      // Ensure socket is connected and wait for it
+      if (!socketCore.connected) {
+        await socketCore.connect();
+      }
+      await socketCore.waitForConnection();
+
+      return new Promise<void>((resolve, reject) => {
+        // Handle challenge response
+        const handleChallenge = async ({ message }: { message: string }) => {
+          try {
+            console.log("🔑 Challenge received:", message.substring(0, 50) + "...");
+            toast.message("Please sign the message in your wallet...");
+            const signature = await wallet.signMessage(message);
+
+            toast.message("Verifying signature...");
+            socketCore.emit("auth:wallet-verify", { message, signature, walletAddress });
+          } catch (error: any) {
+            if (error.message?.includes("rejected")) {
+              toast.error("Signature rejected");
+            } else {
+              toast.error("Failed to sign message");
             }
-          );
+            cleanup();
+            reject(error);
+          }
+        };
 
-          const unwatchModal = watch(
-            () => wallet.isModalOpen.value,
-            (isOpen) => {
-              if (!isOpen && !wallet.isConnected.value) {
-                unwatch();
-                unwatchModal();
-                resolve();
-              }
-            }
-          );
-        });
+        // Handle auth success
+        const handleSuccess = ({ user: userData, accessToken, refreshToken: newRefreshToken }: any) => {
+          authToken.value = accessToken;
+          refreshToken.value = newRefreshToken;
+          user.value = userData;
+          toast.message(`Welcome ${userData.walletAddress.slice(0, 8)}!`);
+          if (route.value.path === "/") {
+            console.log("🚀 Socket auth successful, redirecting to", VITE_DEFAULT_AUTHENTICATED_VIEW);
+            router.replace(VITE_DEFAULT_AUTHENTICATED_VIEW);
+          }
+          cleanup();
+          resolve();
+        };
 
-        if (!wallet.isConnected.value) {
-          toast.message("Connection cancelled");
-          return;
-        }
-      }
+        // Handle auth error
+        const handleError = ({ message }: { message: string }) => {
+          toast.error(`Authentication failed: ${message}`);
+          cleanup();
+          reject(new Error(message));
+        };
 
-      toast.message("Getting authentication challenge...");
-      const challengeResponse = await api.post("/api/auth/challenge", {
-        address: wallet.address.value,
+        // Cleanup function
+        const cleanup = () => {
+          socketCore.off("auth:challenge-response", handleChallenge);
+          socketCore.off("auth:success", handleSuccess);
+          socketCore.off("auth:error", handleError);
+        };
+
+        // Set up socket listeners
+        socketCore.on("auth:challenge-response", handleChallenge);
+        socketCore.on("auth:success", handleSuccess);
+        socketCore.on("auth:error", handleError);
+
+        // Request challenge via socket (after listeners are set up)
+        toast.message("Getting authentication challenge...");
+        console.log("🔑 Requesting challenge for:", walletAddress);
+        socketCore.emit("auth:wallet-challenge", { walletAddress });
       });
-
-      const { message } = challengeResponse.data;
-      toast.message("Please sign the message in your wallet...");
-
-      let signature: string;
-      try {
-        signature = await wallet.signMessage(message);
-      } catch (error: any) {
-        if (error.message?.includes("rejected")) {
-          await wallet.disconnect();
-          toast.error("Signature rejected");
-          return;
-        }
-        throw error;
-      }
-
-      toast.message("Verifying signature...");
-
-      const verifyResponse = await api.post("/api/auth/verify", {
-        message,
-        signature,
-        address: wallet.address.value,
-      });
-
-      const { accessToken, refreshToken: newRefreshToken, user: userData } = verifyResponse.data;
-      authToken.value = accessToken;
-      refreshToken.value = newRefreshToken;
-      user.value = userData;
-      toast.message(`Welcome ${userData.walletAddress.slice(0, 8)}!`);
-      console.log("🚀 Sign in successful, redirecting to", VITE_DEFAULT_AUTHENTICATED_VIEW);
-      _authDetermined?.(true);
-      if (route.fullPath === "/") {
-        router.replace(VITE_DEFAULT_AUTHENTICATED_VIEW);
-      }
     } catch (error: any) {
       console.error("Sign in failed:", error);
       toast.error("Authentication failed");
@@ -187,26 +233,25 @@ export const useAuth = defineStore("auth", () => {
 
   async function signOut() {
     try {
+      // Socket-first logout
+      const socketCore = useSocketCore();
+      socketCore.emit("auth:logout");
+
+      // HTTP logout as fallback
       await api.post("/api/auth/logout").catch(() => {});
     } finally {
       clearAuthState();
-      await wallet.disconnect();
+      // No need to disconnect wallet - it's just a signing tool
       toast.message("Signed out successfully");
       router.replace("/");
     }
   }
 
   async function initialize() {
+    loading.value = true;
     try {
-      loading.value = true;
       await validateStoredToken();
-      isHydrated.value = true;
     } finally {
-      // Don't redirect if we're handling an OAuth callback
-      if (isAuthenticated.value && route.fullPath === "/" && !route.query.spotify) {
-        _authDetermined?.(isAuthenticated.value);
-        router.replace(VITE_DEFAULT_AUTHENTICATED_VIEW);
-      }
       loading.value = false;
     }
   }
@@ -222,6 +267,5 @@ export const useAuth = defineStore("auth", () => {
     signIn,
     signOut,
     initialize,
-    authDetermined,
   };
 });

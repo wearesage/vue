@@ -9,6 +9,7 @@ export { default as FPS } from "./FPS.vue";
 export { default as HoverDots } from "./HoverDots.vue";
 export { default as Icon } from "./Icon.vue";
 export { default as IconButton } from "./IconButton.vue";
+export { default as Link } from "./Link.vue";
 export { default as Map } from "./Map.vue";
 export { default as Pagination } from "./Pagination.vue";
 export { default as ParticipantMouseCursors } from "./ParticipantMouseCursors.vue";

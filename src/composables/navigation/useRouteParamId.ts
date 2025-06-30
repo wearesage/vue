@@ -1,4 +1,4 @@
-import { useRoute } from "vue-router";
+import { useRoute } from "../../router/sage-router";
 import { computed } from "vue";
 
 export function useRouteParamId() {

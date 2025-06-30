@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { ref, computed, toRaw, readonly } from "vue";
 import { io, Socket } from "socket.io-client";
 
 export const useSocketCore = defineStore("socket-core", () => {
@@ -14,15 +14,19 @@ export const useSocketCore = defineStore("socket-core", () => {
 
   // Connection management
   const connect = async (url?: string) => {
-    if (socket.value?.connected) {
-      console.log("🔌 Already connected to socket server");
-      return socket.value;
+    console.log("🔧 connect() called - existing socket:", !!socket.value, "connected:", socket.value?.connected);
+    
+    // If socket already exists, return it (don't create a new one)
+    if (socket.value) {
+      console.log("🔌 Socket already exists, waiting for connection...");
+      return await waitForConnection();
     }
 
     if (url) serverUrl.value = url;
     connecting.value = true;
 
     try {
+      console.log("🔧 Creating NEW socket connection to:", serverUrl.value);
       socket.value = io(serverUrl.value, {
         transports: ["websocket", "polling"],
         autoConnect: true,
@@ -69,12 +73,15 @@ export const useSocketCore = defineStore("socket-core", () => {
       console.warn("🚫 Cannot add event handler - socket not connected");
       return;
     }
-    socket.value.on(event, handler);
+    // Access the raw socket instance to avoid readonly proxy issues
+    const rawSocket = toRaw(socket.value);
+    rawSocket.on(event, handler);
   };
 
   const off = (event: string, handler?: (...args: any[]) => void) => {
     if (!socket.value) return;
-    socket.value.off(event, handler);
+    const rawSocket = toRaw(socket.value);
+    rawSocket.off(event, handler);
   };
 
   const emit = (event: string, ...args: any[]) => {
@@ -82,7 +89,8 @@ export const useSocketCore = defineStore("socket-core", () => {
       console.warn("🚫 Cannot emit - socket not connected");
       return false;
     }
-    socket.value.emit(event, ...args);
+    const rawSocket = toRaw(socket.value);
+    rawSocket.emit(event, ...args);
     return true;
   };
 

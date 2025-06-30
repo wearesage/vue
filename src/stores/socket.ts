@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { ref, computed, readonly } from "vue";
 import { io, Socket } from "socket.io-client";
 
 // Import shared types to avoid duplication

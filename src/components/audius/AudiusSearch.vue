@@ -9,7 +9,7 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from "vue-router";
+import { useRouter } from "../../router/sage-router";
 import { TextInput, IconButton, Row } from "..";
 import { useAudius } from "../../stores/audius";
 

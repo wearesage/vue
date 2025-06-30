@@ -7,9 +7,10 @@ export function useAppInitialization() {
 
   useUserState();
 
-  onMounted(async () => {
-    await auth.initialize();
+  // Initialize auth immediately, not waiting for component mount
+  auth.initialize();
 
+  onMounted(async () => {
     try {
       await socket.connect();
       if (!socket.connected) return;

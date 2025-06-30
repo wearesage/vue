@@ -1,4 +1,4 @@
-import { ref, computed, onUnmounted } from "vue";
+import { ref, computed, onUnmounted, readonly } from "vue";
 import { useSocketCore } from "../../stores/socket-core";
 
 interface AggregateSpaceConfig {

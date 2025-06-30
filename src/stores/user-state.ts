@@ -1,6 +1,6 @@
 import { defineStore, storeToRefs } from "pinia";
 import { ref, computed, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute } from "../router/sage-router";
 import { useSocketCore } from "./socket-core";
 import { useAuth } from "./auth";
 import { useSocketProject } from "./socket-project";
@@ -20,6 +20,9 @@ export const useUserState = defineStore("userState", () => {
   const route = useRoute();
   const socket = useSocketCore();
   const auth = useAuth();
+
+  // Initialize auth since user state depends on it
+  auth.initialize();
 
   // Current state
   const currentPage = ref<CurrentPage>(CurrentPage.HOME);

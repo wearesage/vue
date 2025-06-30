@@ -3,7 +3,7 @@ import { ref, computed } from "vue";
 import { useAudioAnalyser, useAudioElement } from "../composables";
 import { useSpotify } from "./spotify";
 import { useAuth } from ".";
-import { useRouter } from "vue-router";
+import { useRouter } from "../router/sage-router";
 import { useSettings } from ".";
 import { AudioSource, enumKeyToLabel } from "@wearesage/shared";
 
