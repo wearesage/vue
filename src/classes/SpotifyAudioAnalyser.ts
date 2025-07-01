@@ -4,11 +4,13 @@ import { definitions } from "./AudioAnalyser";
 export default class SpotifyAudioAnalyser extends AudioAnalyser {
   private spotifyVolumeValue: number = 1;
 
-  constructor() {
+  constructor(defs = definitions) {
     super({
-      definitions: [[3, 0.2]],
+      definitions: defs,
       getSpotifyVolume: () => this.spotifyVolumeValue,
     });
+
+    this.initialize();
   }
 
   async initialize() {

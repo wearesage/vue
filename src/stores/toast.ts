@@ -1,4 +1,4 @@
-import { defineStore } from "pinia";
+import { defineStore, acceptHMRUpdate } from "pinia";
 import { ref, type Ref } from "vue";
 import { pause } from "../util";
 
@@ -37,3 +37,7 @@ export const useToast = defineStore("toast", () => {
     error,
   };
 });
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useToast, import.meta.hot));
+}

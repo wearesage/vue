@@ -2,13 +2,16 @@
   <BaseInput
     type="text"
     :label="label"
-    :model-value="modelValue"
+    :model-value="String(modelValue)"
     :disabled="disabled"
     :placeholder="placeholder"
     :autofocus="autofocus"
     @update:model-value="$emit('update:model-value', $event)"
     @keypress="$emit('keypress', $event)"
-    @keydown="$emit('keydown', $event)">
+    @keydown="$emit('keydown', $event)"
+    @keyup="$emit('keyup', $event)"
+    @blur="$emit('blur', $event)"
+    @focus="$emit('focus', $event)">
     <template #left>
       <slot name="left" />
     </template>
@@ -26,6 +29,9 @@ defineEmits<{
   "update:model-value": [value: any];
   keypress: [event: KeyboardEvent];
   keydown: [event: KeyboardEvent];
+  keyup: [event: KeyboardEvent];
+  blur: [event: FocusEvent];
+  focus: [event: FocusEvent];
 }>();
 
 defineProps<TextInputProps>();

@@ -29,8 +29,13 @@
   margin-top: 0 !important;
 }
 
-@include transition("pill", all 500ms var(--transition-easing) !important) {
+@include transition("fade-up", all 500ms var(--transition-easing) !important) {
   transform: translateY(-100%);
+  opacity: 0;
+}
+
+@include transition("fade-down", all 500ms var(--transition-easing) !important) {
+  transform: translateY(100%);
   opacity: 0;
 }
 

@@ -14,11 +14,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, shallowRef } from "vue";
 import { useRoute } from "./sage-router";
 
 const route = useRoute();
-const currentComponent = ref<any>(null);
+const currentComponent = shallowRef<any>(null);
 const loading = ref(false);
 
 // Watch route changes and load components

@@ -7,4 +7,4 @@ export { default as NumberInput } from "./NumberInput.vue";
 export { default as PasswordInput } from "./PasswordInput.vue";
 export { default as RangeInput } from "./RangeInput.vue";
 export { default as TextInput } from "./TextInput.vue";
-export { default as TextArea } from "./TextArea.vue";
+export { default as TextAreaInput } from "./TextAreaInput.vue";

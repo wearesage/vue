@@ -1,4 +1,4 @@
-import { defineStore } from "pinia";
+import { defineStore, acceptHMRUpdate } from "pinia";
 import { ref } from "vue";
 import { api } from "../api/client";
 import { useDebouncedSearch } from "../composables/data/useDebouncedSearch";
@@ -58,6 +58,11 @@ export const useAudius = defineStore("audius", () => {
     };
   }
 
+  async function getTrackStream(trackId: string) {
+    const response = await api.get(`/api/audius/stream/${trackId}`);
+    return response.data;
+  }
+
   return {
     fetchTrendingPlaylists,
     fetchTrendingTracks,
@@ -66,8 +71,13 @@ export const useAudius = defineStore("audius", () => {
     fetchTrending,
     fetchPlaylistById,
     fetchUser,
+    getTrackStream,
     trending,
     query,
     results,
   };
 });
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useAudius, import.meta.hot));
+}

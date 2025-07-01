@@ -1,6 +1,14 @@
 <template>
   <Column class="track-list" width="100%" :gap="1" cascade>
-    <Row is="li" v-for="(track, i) in tracks" :key="i" :gap="true" cascade>
+    <Row 
+      is="li" 
+      v-for="(track, i) in tracks" 
+      :key="i" 
+      :gap="true" 
+      cascade
+      class="track-item"
+      @click="() => $emit('play-track', track, i)"
+    >
       <img v-if="showArtwork" :src="track.artwork['480x480']" />
       <span class="number">{{ i + 1 }}</span>
       <strong>
@@ -27,14 +35,25 @@ withDefaults(
     tracks: []
   }
 );
+
+defineEmits<{
+  'play-track': [track: any, index: number];
+}>();
 </script>
 
 <style lang="scss" scoped>
-.row {
+.track-item {
   @include flex-row(start, start);
   width: 100%;
   font-size: 1.5rem;
   line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateX(4px);
+  }
 }
 
 .number,

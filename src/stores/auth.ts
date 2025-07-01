@@ -1,4 +1,4 @@
-import { defineStore } from "pinia";
+import { defineStore, acceptHMRUpdate } from "pinia";
 import { ref, computed, watch, nextTick } from "vue";
 import { useRouter, useRoute } from "../router/sage-router";
 import { api } from "../api/client";
@@ -241,6 +241,24 @@ export const useAuth = defineStore("auth", () => {
       await api.post("/api/auth/logout").catch(() => {});
     } finally {
       clearAuthState();
+      
+      // Reset all stores to clear tokens, intervals, and state
+      try {
+        const { useSpotify } = await import('./spotify');
+        const { useSources } = await import('./sources');
+        const { useSketches } = await import('./sketches');
+        
+        const spotify = useSpotify();
+        const sources = useSources();
+        const sketches = useSketches();
+        
+        spotify.reset();
+        sources.reset();
+        sketches.reset();
+      } catch (error) {
+        console.warn('Failed to reset stores on logout:', error);
+      }
+      
       // No need to disconnect wallet - it's just a signing tool
       toast.message("Signed out successfully");
       router.replace("/");
@@ -269,3 +287,7 @@ export const useAuth = defineStore("auth", () => {
     initialize,
   };
 });
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useAuth, import.meta.hot));
+}

@@ -40,6 +40,7 @@ export interface CurrentlyPlaying {
 export interface SpotifyAnalysis {
   isPlaying: boolean;
   progress_ms: number;
+  timestamp: number;
   track: SpotifyTrack;
   audioFeatures: any;
   audioAnalysis: any;

@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch, nextTick } from "vue";
 import FormElement from "./FormElement.vue";
 import type { InputType } from "../../types/form";
 
@@ -36,6 +36,7 @@ const props = withDefaults(
     disabled?: boolean;
     placeholder?: string;
     autofocus?: boolean;
+    autoWidth?: boolean;
     min?: string | number;
     max?: string | number;
     step?: string | number;
@@ -43,7 +44,8 @@ const props = withDefaults(
   {
     type: "text",
     disabled: false,
-    autofocus: false
+    autofocus: false,
+    autoWidth: false
   }
 );
 
@@ -53,17 +55,43 @@ function onInput(e: Event) {
   const target = e.target as HTMLInputElement;
   const value = props.type === "number" ? Number(target.value) : target.value;
   emit("update:model-value", value);
+
+  if (props.autoWidth) {
+    updateWidth();
+  }
+}
+
+async function updateWidth() {
+  if (!input.value || !props.autoWidth) return;
+  await nextTick();
+  input.value.style.maxWidth = `${props.modelValue.length * 25}px`;
 }
 
 onMounted(() => {
   if (props.autofocus) {
     input.value?.focus();
   }
+
+  if (props.autoWidth) {
+    updateWidth();
+  }
 });
+
+// Watch for modelValue changes to update width
+watch(
+  () => props.modelValue,
+  () => {
+    if (props.autoWidth) {
+      updateWidth();
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style lang="scss" scoped>
-input {
-  height: 1.75rem;
+textarea {
+  // Width is handled by JavaScript when autoWidth is true
+  transition: width 0.1s $transition-easing;
 }
 </style>

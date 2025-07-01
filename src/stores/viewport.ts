@@ -1,4 +1,4 @@
-import { defineStore } from "pinia";
+import { defineStore, acceptHMRUpdate } from "pinia";
 import { ref, computed } from "vue";
 import { createCssVariable, coord } from "../util";
 import { useFullscreen } from "@vueuse/core";
@@ -78,3 +78,7 @@ export const useViewport = defineStore("viewport", () => {
     setScrollPosition,
   };
 });
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useViewport, import.meta.hot));
+}

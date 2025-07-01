@@ -1,4 +1,5 @@
 export { default as AccountPill } from "./AccountPill.vue";
+export { default as AudioSourceButton } from "./AudioSourceButton.vue";
 export { default as Avatar } from "./Avatar.vue";
 export { default as Button } from "./Button.vue";
 export { default as Calendar } from "./Calendar.vue";
@@ -19,4 +20,5 @@ export { default as Record } from "./Record.vue";
 export { default as Root } from "./Root.vue";
 export { default as Tabs } from "./Tabs.vue";
 export { default as Toast } from "./Toast.vue";
+export { default as TrackDisplay } from "./TrackDisplay.vue";
 export { default as Vinyl } from "./Vinyl.vue";

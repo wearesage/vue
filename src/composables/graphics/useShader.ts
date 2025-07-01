@@ -103,7 +103,8 @@ export function useShader(
     const width = props.width || viewport.width;
     const height = props.height || viewport.height;
     const dpr = props.dpr || viewport.dpr;
-    const time = now / 1000;
+    // Honor props.time when provided, otherwise use RAF time
+    const time = props.time !== undefined ? props.time / 1000 : now / 1000;
     const w = width * dpr;
     const h = height * dpr;
     

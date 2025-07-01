@@ -21,14 +21,11 @@ defineExpose({ element });
 <style lang="scss" scoped>
 .form-element {
   @include flex-row(center, center);
-  @include box(0 0.3 0 0.6, 0.75);
-  padding: 3px 3px 3px 10px;
+  @include shadow;
   position: relative;
-  height: fit-content;
-  background: $black;
-  border-radius: 1.5rem;
-  box-shadow: inset 0 0 2px 0 $black;
+  box-shadow: none;
   transition: var(--transition);
+  border: 0;
 }
 
 .disabled :deep(> *) {

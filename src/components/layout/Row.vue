@@ -5,13 +5,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import { useTruthyNumber, useDimensionalStyleShorthand, useWithUnit } from "../../composables";
 import { type LayoutProps, DEFAULT_LAYOUT_PROPS } from "../../types/layout";
 
 const props = withDefaults(defineProps<LayoutProps>(), DEFAULT_LAYOUT_PROPS);
-const width = computed(() => (props.width ? props.width : "fit-content"));
-const height = computed(() => (props.height ? props.height : "fit-content"));
 const numericGap = useTruthyNumber(props.gap);
 const gap = useWithUnit(numericGap);
 const padding = useDimensionalStyleShorthand(props.padding);

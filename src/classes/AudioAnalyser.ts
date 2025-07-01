@@ -105,27 +105,66 @@ export default class AudioAnalyser {
     return val / len;
   }
 
-  async initialize({ element, microphone, spotify }: { element?: HTMLAudioElement; microphone?: boolean; spotify?: boolean }) {
+  async initialize({ element, microphone, spotify, audioContext, analyserNode }: { 
+    element?: HTMLAudioElement; 
+    microphone?: boolean; 
+    spotify?: boolean;
+    audioContext?: AudioContext;
+    analyserNode?: AnalyserNode;
+  }) {
     if (spotify) {
       this.state.source = "spotify";
       this.state.initialized = true;
       return;
     }
 
-    this.ctx = new AudioContext();
+    // Use provided AudioContext (from AudioSystemManager) or create new one
+    if (audioContext) {
+      console.log('🎵 AudioAnalyser using shared AudioContext from AudioSystemManager');
+      this.ctx = audioContext;
+    } else {
+      console.log('🎵 AudioAnalyser creating its own AudioContext (fallback)');
+      this.ctx = new AudioContext();
+    }
+    
+    // Use provided analyser node or create new one
+    if (analyserNode) {
+      console.log('🎵 AudioAnalyser using shared AnalyserNode from AudioSystemManager');
+      this.analyser = analyserNode;
+      // Configure it with our settings
+      this.analyser.smoothingTimeConstant = 0;
+      this.analyser.fftSize = this.config.bitDepth;
+    } else {
+      this.analyser = this.ctx.createAnalyser();
+      this.analyser.smoothingTimeConstant = 0;
+      this.analyser.fftSize = this.config.bitDepth;
+    }
+    
+    // Create filter for processing
     this.filter = this.ctx.createBiquadFilter();
     this.filter.type = "lowpass";
     this.filter.frequency.value = this.config.lowpass.frequency;
     this.filter.Q.value = this.config.lowpass.Q;
-    this.analyser = this.ctx.createAnalyser();
-    this.analyser.smoothingTimeConstant = 0;
-    this.analyser.fftSize = this.config.bitDepth;
 
     if (element) {
       if (this.state.microphone) this.state.microphone.getTracks().forEach((track) => track.stop());
       this.state.source = "audio";
-      this.state.mediaElementSource = this.ctx.createMediaElementSource(element);
-      this.source = this.state.mediaElementSource;
+      
+      // Only create MediaElementSource if we don't have shared context
+      // (AudioSystemManager already created the source)
+      if (!audioContext) {
+        this.state.mediaElementSource = this.ctx.createMediaElementSource(element);
+        this.source = this.state.mediaElementSource;
+        
+        // Connect the chain: source -> filter -> analyser -> destination
+        this.source.connect(this.filter);
+        this.filter.connect(this.analyser);
+        this.source.connect(this.ctx.destination);
+      } else {
+        // AudioSystemManager already set up the audio graph,
+        // we just need to tap into the existing analyser
+        console.log('🎵 AudioAnalyser connected to shared audio graph');
+      }
     }
 
     if (microphone) {
@@ -137,18 +176,11 @@ export default class AudioAnalyser {
       });
       this.state.mediaStreamSource = this.ctx.createMediaStreamSource(mic);
       this.source = this.state.mediaStreamSource;
-    }
-
-    if (!this.source) {
-      console.warn("AudioAnalyser has no valid source.");
-      return;
-    }
-
-    this.source.connect(this.filter);
-    this.filter.connect(this.analyser);
-
-    if (this.state.source !== "microphone") {
-      this.source.connect(this.ctx.destination);
+      
+      // Connect microphone chain
+      this.source.connect(this.filter);
+      this.filter.connect(this.analyser);
+      // Note: Don't connect microphone to destination to avoid feedback
     }
 
     this.state.initialized = true;
@@ -172,7 +204,7 @@ export default class AudioAnalyser {
     const frameDuration = 1000 / frameRate;
     const [ref, min] = this.sampleVolume((this.config.definitions[0][0] * 1000) / frameDuration);
     const [sample] = this.sampleVolume((this.config.definitions[0][1] * 1000) / frameDuration);
-    const raw = Number(Math.pow(scaleLinear([min, ref], [0, 1])(sample), this.state.source === "spotify" ? 1 : 1.5).toFixed(3));
+    const raw = Number(Math.pow(scaleLinear([min, ref], [0, 1])(sample), this.state.source === "spotify" ? 1.5 : 1.5).toFixed(3));
 
     if (!isNaN(raw)) {
       this.state.volume = raw / 2;

@@ -1,4 +1,4 @@
-import { defineStore } from "pinia";
+import { defineStore, acceptHMRUpdate } from "pinia";
 import { ref, computed, toRaw, readonly } from "vue";
 import { io, Socket } from "socket.io-client";
 
@@ -164,3 +164,7 @@ export const useSocketCore = defineStore("socket-core", () => {
     waitForConnection,
   };
 });
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useSocketCore, import.meta.hot));
+}

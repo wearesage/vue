@@ -1,5 +1,5 @@
 import { ref, shallowRef, computed, watch } from "vue";
-import { defineStore } from "pinia";
+import { defineStore, acceptHMRUpdate } from "pinia";
 import { useViewport } from "./viewport";
 import { coord } from "../util";
 
@@ -62,3 +62,7 @@ export const usePopover = defineStore("popover", () => {
     uniformKey,
   };
 });
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(usePopover, import.meta.hot));
+}

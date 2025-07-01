@@ -12,7 +12,10 @@
       :step="step"
       @input="onInput"
       @keypress="$emit('keypress', $event)"
-      @keydown="$emit('keydown', $event)" />
+      @keydown="$emit('keydown', $event)"
+      @keyup="$emit('keyup', $event)"
+      @blur="$emit('blur', $event)"
+      @focus="$emit('focus', $event)" />
     <slot name="right" />
   </FormElement>
 </template>
@@ -26,6 +29,9 @@ const emit = defineEmits<{
   "update:model-value": [value: string];
   keypress: [event: KeyboardEvent];
   keydown: [event: KeyboardEvent];
+  keyup: [event: KeyboardEvent];
+  blur: [event: FocusEvent];
+  focus: [event: FocusEvent];
 }>();
 
 const props = withDefaults(
@@ -43,7 +49,7 @@ const props = withDefaults(
   {
     type: "text",
     disabled: false,
-    autofocus: false,
+    autofocus: false
   }
 );
 
@@ -60,9 +66,3 @@ onMounted(() => {
   }
 });
 </script>
-
-<style lang="scss" scoped>
-input {
-  height: 1.75rem;
-}
-</style>

@@ -1,5 +1,5 @@
 import { ref, shallowRef, computed, watch } from "vue";
-import { defineStore } from "pinia";
+import { defineStore, acceptHMRUpdate } from "pinia";
 import { useRAF } from "./raf";
 import type { Sketch, Variant, AddUniformProps } from "../types/sketches";
 import { useStudies } from "../composables";
@@ -151,21 +151,36 @@ export const useSketches = defineStore("sketches", () => {
     shuffleVariants.value = !shuffleVariants.value;
   }
 
-  function magicTween(duration = 500) {
+  function magicTween(duration = 500, temp = 0.7) {
     if (!sketch.value) return;
     const source = sketch.value.variants[variant.value];
-    tweenTo(generateVariant(source), duration);
+    tweenTo(generateVariant(source, temp), duration);
   }
 
   function startMagicInterval() {
     clearInterval(magicInterval.value);
     magicInterval.value = setInterval(() => {
-      magicTween(2000);
-    }, 2200);
+      magicTween(3000, 0.25);
+    }, 3100);
   }
 
   function stopMagicInterval() {
     clearInterval(magicInterval.value);
+  }
+
+  /**
+   * Reset sketches store state (called on logout)
+   */
+  function reset() {
+    console.log('🎨 Resetting sketches store state');
+    
+    // Stop all intervals
+    clearInterval(variantShuffleInterval.value);
+    clearInterval(magicInterval.value);
+    
+    // Reset interval refs
+    variantShuffleInterval.value = null;
+    magicInterval.value = null;
   }
 
   return {
@@ -207,5 +222,10 @@ export const useSketches = defineStore("sketches", () => {
     startMagicInterval,
     stopMagicInterval,
     canAddVariant,
+    reset,
   };
 });
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useSketches, import.meta.hot));
+}

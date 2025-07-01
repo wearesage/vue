@@ -13,7 +13,11 @@ export function useAudioElement(track: Ref<string | null>, initialize?: (element
   }
 
   watch(track, (newTrack) => {
-    if (newTrack) element.value.src = newTrack;
+    if (newTrack) {
+      element.value.src = newTrack;
+      playing.value = true;
+      toggle();
+    }
   });
 
   function toggle() {
@@ -22,14 +26,14 @@ export function useAudioElement(track: Ref<string | null>, initialize?: (element
       if (initialize) initialize(element.value);
       initialized.value = true;
     }
-    setTimeout(() => {
-      element.value[playing.value ? "pause" : "play"]?.();
-      playing.value = !playing.value;
 
-      setTimeout(() => {
-        element.value.currentTime = 0;
-      }, 1500);
-    }, 4000);
+    if (playing.value) {
+      element.value.pause();
+      playing.value = false;
+    } else {
+      element.value.play();
+      playing.value = true;
+    }
   }
 
   function play() {

@@ -1,4 +1,4 @@
-import { defineStore } from "pinia";
+import { defineStore, acceptHMRUpdate } from "pinia";
 import { ref, computed, readonly } from "vue";
 import { io, Socket } from "socket.io-client";
 
@@ -276,3 +276,7 @@ export const useSocket = defineStore("socket", () => {
     stopHeartbeat,
   };
 });
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useSocket, import.meta.hot));
+}

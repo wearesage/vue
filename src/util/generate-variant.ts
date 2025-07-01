@@ -5,7 +5,7 @@ import { type Variant } from "../types";
 
 const { getMin, getMax, getStep } = uniformRangeUtils;
 
-export function generateVariant(sketch: Variant, temp: 0.7): Variant {
+export function generateVariant(sketch: Variant, temp = 0.7): Variant {
   return Object.keys(sketch).reduce((acc: Variant, key: string) => {
     const uniform = sketch[key];
 

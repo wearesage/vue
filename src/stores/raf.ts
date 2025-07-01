@@ -1,5 +1,5 @@
 import { v4 } from "uuid";
-import { defineStore } from "pinia";
+import { defineStore, acceptHMRUpdate } from "pinia";
 import { ref, shallowRef, type Ref } from "vue";
 import { ease, clamp } from "../util";
 export type AnimationTick = (now: number, progress: number, elapsed: number) => void;
@@ -22,6 +22,7 @@ export const useRAF = defineStore("raf", () => {
   let frameNumber = ref(0);
   let frames: any[] = [];
   const time: Ref<number> = ref(window.performance.now());
+  const now = ref(Date.now());
   const frameRate: any = ref(60);
   const promises: any = {};
   const preFrame: any = ref([]);
@@ -76,19 +77,20 @@ export const useRAF = defineStore("raf", () => {
     last = now;
   }
 
-  function tick(now: DOMHighResTimeStamp) {
+  function tick(_now: DOMHighResTimeStamp) {
     frameNumber.value++;
-    time.value = window.performance.now();
+    time.value = _now;
+    now.value = Date.now();
 
     preFrame.value.forEach((fn: (now: DOMHighResTimeStamp) => void) => {
-      fn(now);
+      fn(time.value);
     });
 
     queue.value.forEach((animation: Animation, i: number) => {
-      const elapsed = now - (animation?.start || 0);
+      const elapsed = time.value - (animation?.start || 0);
       const duration = animation.duration || Infinity;
       const progress = clamp(animation.easing?.(elapsed / duration) as number);
-      animation.tick?.(now, progress, elapsed);
+      animation.tick?.(time.value, progress, elapsed);
 
       if (progress === 1) {
         queue.value.splice(i, 1);
@@ -101,7 +103,7 @@ export const useRAF = defineStore("raf", () => {
 
     keys.forEach((id: string) => {
       const animation = map.value[id];
-      const elapsed = now - (animation?.start || 0);
+      const elapsed = time.value - (animation?.start || 0);
       const duration = animation.duration || Infinity;
       const progress = clamp(animation.easing?.(elapsed / duration) as number);
       animation.tick?.(now, progress, elapsed);
@@ -113,7 +115,7 @@ export const useRAF = defineStore("raf", () => {
       }
     });
 
-    frame(now);
+    frame(time.value);
 
     if (queue.value.length > 0 || keys.length > 0) {
       raf.value = window.requestAnimationFrame(tick);
@@ -130,6 +132,7 @@ export const useRAF = defineStore("raf", () => {
     start,
     stop,
     time,
+    now,
     map,
     queue,
     frameRate,
@@ -146,3 +149,7 @@ export const useRAF = defineStore("raf", () => {
     },
   };
 });
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useRAF, import.meta.hot));
+}

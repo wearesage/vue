@@ -22,7 +22,7 @@ export * from "./audio/useAudiusUserWebsite";
 export * from "./audio/useGetAudiusPlaylistById";
 export * from "./audio/useGetAudiusUserByHandle";
 export * from "./audio/useRandomAdeleTrack";
-
+export * from "./audio/useTrackAdapter";
 // Games
 export * from "./games/useChessMatch";
 export * from "./games/useChessPieces";

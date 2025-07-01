@@ -1,6 +1,6 @@
 <template>
-  <Column v-if="sketches.uniforms" justify="end" align="end" cascade>
-    <Row v-for="(_, key) in sketches.uniforms" class="uniform" :class="getClasses(key)">
+  <Column v-if="sketches.uniforms" justify="end" align="end">
+    <Row v-for="(_, key) in sketches.uniforms" class="uniform" :class="getClasses(key)" cascade>
       <ColorInput v-if="isColor(_.value)" :label="key" :webgl="true" v-model="(_.value as [number, number, number])" />
       <Toggle v-if="isBoolean(_.value)" :label="key" v-model="_.value" />
       <RangeInput

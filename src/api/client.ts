@@ -2,7 +2,9 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosR
 import { useAuth } from "../stores/auth";
 import { useToast } from "../stores/toast";
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:2223";
+// In development, use relative URLs to leverage Vite proxy
+// In production, use the full API URL
+export const API_BASE_URL = import.meta.env.DEV ? "" : (import.meta.env.VITE_API_BASE_URL || "http://localhost:2223");
 
 let apiClient: AxiosInstance | null = null;
 

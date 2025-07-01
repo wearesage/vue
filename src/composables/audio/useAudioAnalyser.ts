@@ -25,16 +25,25 @@ export function useAudioAnalyser() {
     }
   }
 
-  function initialize(element: HTMLAudioElement) {
+  function initialize(element: HTMLAudioElement, options?: { audioContext?: AudioContext; analyserNode?: AnalyserNode }) {
     if (instance.value && element) {
       audio.value = element;
       instance?.value?.destroy?.();
-      instance.value?.initialize({ element });
+      
+      // Pass shared context and analyser to AudioAnalyser class
+      instance.value?.initialize({ 
+        element,
+        audioContext: options?.audioContext,
+        analyserNode: options?.analyserNode
+      });
+      
       raf.remove("audio");
       raf.add(tick, {
         id: "audio",
       });
       initialized.value = true;
+      
+      console.log('🎵 useAudioAnalyser initialized with', options ? 'shared' : 'new', 'AudioContext');
     }
   }
 

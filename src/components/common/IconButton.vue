@@ -7,8 +7,7 @@
     :style="{ background: background || 'var(--black)' }"
     class="icon-button"
     :class="{ propActive: active, disabled, small, label }"
-    v-bind="$attrs"
-  >
+    v-bind="$attrs">
     <span v-if="label">
       {{ label }}
     </span>
@@ -20,8 +19,7 @@
     @click="handleClick"
     class="icon-button"
     :class="{ propActive: active, disabled, small, label }"
-    v-bind="$attrs"
-  >
+    v-bind="$attrs">
     <span v-if="label">
       {{ label }}
     </span>
@@ -53,7 +51,7 @@ function handleClick(e: Event) {
     router.push(props.to);
   } else {
     // Emit click for regular button behavior
-    emit('click', e);
+    emit("click", e);
   }
 }
 </script>
@@ -63,21 +61,15 @@ button,
 a {
   @include size(3rem);
   @include flex-row(center, center);
+  @include shadow;
   flex-shrink: 0;
   flex-grow: 0;
-  background: $black;
-  border-radius: 3rem;
-  box-shadow: 0 2px 0 2px darken($black, 5%);
   margin: 1px 0;
   padding: 0;
   cursor: pointer;
-  outline: 1px solid rgba($purple, 0.5);
   transition: $hover-transition;
   font-family: "Major Mono Display", monospace;
 
-  * {
-    pointer-events: none;
-  }
 
   &.label {
     @include box(1 1.25, 0.75);
