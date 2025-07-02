@@ -22,6 +22,7 @@ defineExpose({ element });
 .form-element {
   @include flex-row(center, center);
   @include shadow;
+  @include box(0.25, 0.125);
   position: relative;
   box-shadow: none;
   transition: var(--transition);

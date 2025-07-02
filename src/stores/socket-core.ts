@@ -12,6 +12,9 @@ export const useSocketCore = defineStore("socket-core", () => {
   // Heartbeat management
   let heartbeatInterval: number | null = null;
 
+  // Browser close detection
+  let browserCloseListenersAdded = false;
+
   // Connection management
   const connect = async (url?: string) => {
     console.log("🔧 connect() called - existing socket:", !!socket.value, "connected:", socket.value?.connected);
@@ -37,6 +40,9 @@ export const useSocketCore = defineStore("socket-core", () => {
         connected.value = true;
         connecting.value = false;
         console.log("🔗 Connected to socket server:", socket.value?.id);
+        
+        // Add browser close detection when socket connects
+        addBrowserCloseListeners();
       });
 
       socket.value.on("disconnect", (reason) => {
@@ -64,6 +70,7 @@ export const useSocketCore = defineStore("socket-core", () => {
       connected.value = false;
       connecting.value = false;
       stopHeartbeat();
+      removeBrowserCloseListeners();
     }
   };
 
@@ -115,6 +122,70 @@ export const useSocketCore = defineStore("socket-core", () => {
     }
   };
 
+  // Browser close detection handlers
+  const handleBeforeUnload = () => {
+    console.log("🚪 Browser beforeunload - cleaning up socket");
+    cleanupOnPageUnload();
+  };
+
+  const handlePageHide = () => {
+    console.log("🚪 Page pagehide - cleaning up socket");
+    cleanupOnPageUnload();
+  };
+
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'hidden') {
+      console.log("👁️ Page hidden - user may be leaving");
+      // Only emit offline signal, don't disconnect socket
+      // in case user is just switching tabs
+      if (socket.value?.connected) {
+        emit("user-state:page-hidden");
+      }
+    } else if (document.visibilityState === 'visible') {
+      console.log("👁️ Page visible - user returned");
+      if (socket.value?.connected) {
+        emit("user-state:page-visible");
+      }
+    }
+  };
+
+  const cleanupOnPageUnload = () => {
+    if (socket.value?.connected) {
+      // Emit offline signal before disconnect
+      const rawSocket = toRaw(socket.value);
+      rawSocket.emit("user-state:offline");
+      
+      // Force immediate disconnect
+      rawSocket.disconnect();
+      console.log("🧹 Socket disconnected on page unload");
+    }
+    
+    stopHeartbeat();
+    removeBrowserCloseListeners();
+  };
+
+  const addBrowserCloseListeners = () => {
+    if (browserCloseListenersAdded || typeof window === 'undefined') return;
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    browserCloseListenersAdded = true;
+    console.log("👂 Added browser close detection listeners");
+  };
+
+  const removeBrowserCloseListeners = () => {
+    if (!browserCloseListenersAdded || typeof window === 'undefined') return;
+    
+    window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.removeEventListener('pagehide', handlePageHide);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+    
+    browserCloseListenersAdded = false;
+    console.log("🧹 Removed browser close detection listeners");
+  };
+
   // Utility to wait for connection
   const waitForConnection = (timeoutMs = 5000): Promise<Socket> => {
     return new Promise((resolve, reject) => {
@@ -159,6 +230,11 @@ export const useSocketCore = defineStore("socket-core", () => {
     // Heartbeat
     startHeartbeat,
     stopHeartbeat,
+
+    // Browser close detection
+    addBrowserCloseListeners,
+    removeBrowserCloseListeners,
+    cleanupOnPageUnload,
 
     // Utils
     waitForConnection,

@@ -23,7 +23,7 @@ const viewport = useViewport();
 const route = useRoute();
 const container = ref();
 const LS_KEY = ref("view:scrollTop" + route.path);
-const { centered = false, cascade = false } = defineProps<{
+const { centered, cascade } = defineProps<{
   centered?: boolean;
   cascade?: boolean;
 }>();

@@ -4,7 +4,7 @@
     <Transition name="fade">
       <span class="logout" v-if="logout"> SIGN OUT </span>
     </Transition>
-    <span class="view">PROFILE</span>
+    <!-- <span class="view">PROFILE</span> -->
     <span class="acct"> {{ truncatedAddress }}</span>
     <IconButton @click.stop="handleSignOut" @mouseover="onLogoutMouseover" @mouseout="onLogoutMouseout" icon="logout" small />
   </Row>
@@ -23,7 +23,7 @@ const logout = ref(false);
 
 // Computed truncated address
 const truncatedAddress = computed(() => {
-  if (!auth.walletAddress) return '';
+  if (!auth.walletAddress) return "";
   return `${auth.walletAddress.slice(0, 6)}...${auth.walletAddress.slice(-4)}`;
 });
 
@@ -55,8 +55,7 @@ function onLogoutMouseout() {
   line-height: 1;
   background: $black;
   transition: $hover-transition;
-
-  cursor: pointer;
+  cursor: default;
 
   span {
     transition: $hover-transition;
@@ -75,7 +74,6 @@ i {
 
   &:hover {
     background: lighten($black, 5%) !important;
-    cursor: pointer;
   }
 
   .logout & {
@@ -90,11 +88,7 @@ span.logout {
   opacity: 0;
 }
 
-.account-pill:hover {
-  .view {
-    opacity: 1;
-  }
-
+.logout:hover {
   .acct {
     opacity: 0;
   }

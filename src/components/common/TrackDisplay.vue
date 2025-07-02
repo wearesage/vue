@@ -3,11 +3,7 @@
     <Transition name="fade">
       <Row v-if="currentTrack" center>
         <div class="track-artwork">
-          <img 
-            v-if="displayArtwork" 
-            :src="displayArtwork" 
-            :alt="`${displayTitle} by ${displayArtist}`"
-            @error="onImageError" />
+          <img v-if="displayArtwork" :src="displayArtwork" :alt="`${displayTitle} by ${displayArtist}`" @error="onImageError" />
           <div v-else class="artwork-placeholder">
             <Icon icon="vinyl" />
           </div>
@@ -34,7 +30,7 @@
     </Transition>
 
     <Transition name="fade">
-      <h3 v-if="!currentTrack" class="none">No track currently playing</h3>
+      <h3 v-if="!currentTrack && shouldShowNoTrackMessage" class="none">No track currently playing</h3>
     </Transition>
   </Row>
 </template>
@@ -42,13 +38,30 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { Row, Icon } from "../../components";
-import { useQueue } from "../../stores";
+import { useQueue, useSources, useUserState } from "../../stores";
+import { AudioSource } from "@wearesage/shared";
 
 // Simple: just show whatever's in the queue
 const queue = useQueue();
+const sources = useSources();
+const userState = useUserState();
 
 // Queue tracks are already adapted, so use them directly
-const currentTrack = computed(() => queue.currentTrack);
+const currentTrack = computed(() => {
+  const track = queue.currentTrack;
+  console.log("🖼️ TrackDisplay currentTrack updated:", track);
+  return track;
+});
+
+// Only show "no track playing" message for sources we don't control (like Spotify)
+// But respect alwaysShowTrack preference to force visibility
+const shouldShowNoTrackMessage = computed(() => {
+  // If alwaysShowTrack is enabled, always show a message when no track
+  if (userState.alwaysShowTrack) return true;
+
+  // Otherwise, only show for Spotify (sources we don't control)
+  return sources.source === AudioSource.SPOTIFY;
+});
 
 // Display helpers
 const displayTitle = computed(() => currentTrack.value?.title || "Unknown Track");
@@ -56,7 +69,7 @@ const displayArtist = computed(() => currentTrack.value?.artist || "Unknown Arti
 const displayAlbum = computed(() => currentTrack.value?.album);
 const displayArtwork = computed(() => {
   const artwork = currentTrack.value?.artwork;
-  console.log('🖼️ TrackDisplay artwork debug:', {
+  console.log("🖼️ TrackDisplay artwork debug:", {
     hasTrack: !!currentTrack.value,
     artwork,
     medium: artwork?.medium,
@@ -106,14 +119,14 @@ function getSourceLabel(source: AudioSource): string {
 }
 
 function onImageError(event: Event) {
-  console.warn('🖼️ Artwork failed to load:', (event.target as HTMLImageElement)?.src);
+  console.warn("🖼️ Artwork failed to load:", (event.target as HTMLImageElement)?.src);
 }
 </script>
 
 <style lang="scss" scoped>
 .track-display {
-  @include position(fixed, null 0 1rem 0, 500);
-  @include flex-row(center, center);
+  @include position(fixed, null 0 1rem 1rem, 500);
+  @include flex-row(start, center);
   width: 100%;
 
   * {

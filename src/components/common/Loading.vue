@@ -1,8 +1,22 @@
 <template>
-  <div class="loading">
+  <div v-if="ui.loadingDots" class="loading" :class="{ transparent }">
     <i class="loader" />
   </div>
 </template>
+
+<script setup lang="ts">
+import { useUI } from "../../stores/ui";
+
+interface Props {
+  transparent?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  transparent: false,
+});
+
+const ui = useUI();
+</script>
 
 <style lang="scss" scoped>
 .loading {
@@ -12,6 +26,10 @@
   background: $black;
   font-size: 4rem;
   font-family: "Major Mono Display";
+
+  &.transparent {
+    background: transparent;
+  }
 }
 
 .loader {

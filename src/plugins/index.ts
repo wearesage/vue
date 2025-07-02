@@ -1,0 +1,1 @@
+export { appInitializationPlugin } from './app-initialization';

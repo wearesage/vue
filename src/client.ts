@@ -4,11 +4,14 @@ export * from "./util";
 export * from "./components";
 export * from "./classes";
 export * from "./router";
+export * from "./directives";
 
 import { createApp as createVueApp } from "vue";
 import Tres from "@tresjs/core";
 import { createPinia } from "pinia";
 import { createSageRouter } from "./router";
+import { appInitializationPlugin } from "./plugins";
+import { DirectivesPlugin } from "./directives";
 
 export type AppConfig = {
   target?: string;
@@ -20,6 +23,9 @@ export async function createApp(App: any, options?: AppConfig) {
 
   const pinia = createPinia();
   
+  // Initialize core services via Pinia plugin
+  pinia.use(appInitializationPlugin);
+  
   // Use provided routes 
   const routesModule = routes;
   
@@ -29,6 +35,7 @@ export async function createApp(App: any, options?: AppConfig) {
 
   app.use(pinia);
   app.use(Tres);
+  app.use(DirectivesPlugin);
   app.mount(target);
 
   // Initialize router (sets up event listeners, etc.)

@@ -1,8 +1,13 @@
 import { computed, type Ref } from "vue";
 import { hashMap, transformLegacySketch, isValidSketch, cleanStudyIterations, clone, type LegacySketch } from "../../util";
+// TEMPORARY: Commenting out huge shader JSON data for build size
 import legacyData from "../../data/shaders/old.json";
 import studyData from "../../data/shaders/studies.json";
 import { Sketch } from "../../types";
+
+// TEMPORARY: Empty data for build testing
+// const legacyData: LegacySketch[] = [];
+// const studyData: any[] = [];
 
 const sketches = (legacyData as LegacySketch[]).filter(isValidSketch).map(transformLegacySketch);
 const validSketchIds = new Set<string>(sketches.map((sketch) => sketch._id));

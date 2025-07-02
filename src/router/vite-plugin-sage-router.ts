@@ -18,7 +18,7 @@ interface RouteInfo {
 export function sageRouter(options: SageRouterOptions = {}): Plugin {
   const {
     pagesDir = 'src/pages',
-    outputFile = 'src/router/generated-routes.ts',
+    outputFile = 'src/routes.generated.ts',
     extensions = ['vue']
   } = options
 
@@ -141,7 +141,12 @@ export function sageRouter(options: SageRouterOptions = {}): Plugin {
 
     // Generate import path relative to output file
     const outputDir = path.dirname(path.resolve(root, outputFile))
-    const importPath = path.relative(outputDir, filePath).replace(/\\/g, '/')
+    let importPath = path.relative(outputDir, filePath).replace(/\\/g, '/')
+    
+    // Ensure relative paths start with './' for proper ES module resolution
+    if (!importPath.startsWith('./') && !importPath.startsWith('../')) {
+      importPath = './' + importPath
+    }
 
     return {
       path: routePath,

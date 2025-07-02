@@ -5,22 +5,82 @@ import { api } from "../api/client";
 import { useToast } from "./toast";
 import { useWallet } from "../composables/auth/useWallet";
 import { useSocketCore } from "./socket-core";
-import { VITE_DEFAULT_AUTHENTICATED_VIEW } from "../constants/env";
+import { useUI } from "./ui";
+import { VITE_DEFAULT_AUTHENTICATED_VIEW, VITE_ADMIN_WALLET } from "../constants/env";
+import { UserRole } from "@wearesage/shared";
 
 export const useAuth = defineStore("auth", () => {
   const router = useRouter();
   const route = useRoute();
   const toast = useToast();
   const wallet = useWallet();
+  const ui = useUI();
   const authToken = ref<string | null>(localStorage.getItem("authToken"));
   const refreshToken = ref<string | null>(localStorage.getItem("refreshToken"));
   const user = ref<any>(JSON.parse(localStorage.getItem("user") || "null"));
   const loading = ref(false);
   const isAuthenticating = ref(false);
+  
+  // Track explicit user intent to prevent auto-firing
+  const userIntentToSignIn = ref(false);
+
+  // 🎭 Admin impersonation state
+  const originalUser = ref<any>(JSON.parse(localStorage.getItem("originalUser") || "null"));
+  const viewingAsUser = ref<any>(JSON.parse(localStorage.getItem("viewingAsUser") || "null"));
+  const isImpersonating = ref<boolean>(localStorage.getItem("isImpersonating") === "true");
 
   const isAuthenticated = computed(() => !!authToken.value && !!user.value);
 
-  const walletAddress = computed(() => user.value?.walletAddress || null);
+  // When impersonating, return the target user's wallet address, otherwise the current user's
+  const walletAddress = computed(() => {
+    if (isImpersonating.value && viewingAsUser.value) {
+      return viewingAsUser.value.walletAddress;
+    }
+    return user.value?.walletAddress || null;
+  });
+
+  // For admin checks, ALWAYS use the original user (admin privileges are preserved during impersonation)
+  const isAdmin = computed(() => {
+    const adminUser = isImpersonating.value ? originalUser.value : user.value;
+    return isAuthenticated.value && 
+           adminUser?.walletAddress === VITE_ADMIN_WALLET && 
+           adminUser?.role === UserRole.ADMIN;
+  });
+
+  // The current effective user (for UI display and permissions)
+  const currentUser = computed(() => {
+    if (isImpersonating.value && viewingAsUser.value) {
+      return viewingAsUser.value;
+    }
+    return user.value;
+  });
+
+  const isArtist = computed(() => {
+    return isAuthenticated.value && currentUser.value?.role === UserRole.ARTIST;
+  });
+
+  const isSubscriber = computed(() => {
+    return isAuthenticated.value && currentUser.value?.role === UserRole.SUBSCRIBER;
+  });
+
+  const isPaidTier = computed(() => {
+    return isAuthenticated.value && [UserRole.SUBSCRIBER, UserRole.ARTIST, UserRole.ADMIN].includes(currentUser.value?.role);
+  });
+
+  const isArtistOrAdmin = computed(() => {
+    return isAuthenticated.value && [UserRole.ARTIST, UserRole.ADMIN].includes(currentUser.value?.role);
+  });
+
+  const userRole = computed(() => {
+    if (!isAuthenticated.value || !currentUser.value?.role) return null;
+    const roleNames = {
+      [UserRole.USER]: "USER",
+      [UserRole.ADMIN]: "ADMIN", 
+      [UserRole.ARTIST]: "ARTIST",
+      [UserRole.SUBSCRIBER]: "SUBSCRIBER"
+    };
+    return roleNames[currentUser.value.role] || "UNKNOWN";
+  });
 
   watch(authToken, (token) => {
     if (token) {
@@ -50,6 +110,39 @@ export const useAuth = defineStore("auth", () => {
     { deep: true }
   );
 
+  // 🎭 Impersonation state watchers
+  watch(
+    originalUser,
+    (userData) => {
+      if (userData) {
+        localStorage.setItem("originalUser", JSON.stringify(userData));
+      } else {
+        localStorage.removeItem("originalUser");
+      }
+    },
+    { deep: true }
+  );
+
+  watch(
+    viewingAsUser,
+    (userData) => {
+      if (userData) {
+        localStorage.setItem("viewingAsUser", JSON.stringify(userData));
+      } else {
+        localStorage.removeItem("viewingAsUser");
+      }
+    },
+    { deep: true }
+  );
+
+  watch(isImpersonating, (impersonating) => {
+    if (impersonating) {
+      localStorage.setItem("isImpersonating", "true");
+    } else {
+      localStorage.removeItem("isImpersonating");
+    }
+  });
+
   // Removed router logic - moved to Root.vue where it belongs!
 
   async function validateStoredToken(): Promise<boolean> {
@@ -68,14 +161,42 @@ export const useAuth = defineStore("auth", () => {
       await socketCore.waitForConnection();
 
       return new Promise<boolean>((resolve) => {
+        let timeoutId: NodeJS.Timeout | null = null;
+        let isResolved = false;
+
         // Set up listeners for socket validation response
         const handleSuccess = ({ user: userData }: any) => {
+          if (isResolved) return;
+          isResolved = true;
+          
           user.value = userData;
+          
+          // 🚀 Extension Auth Handoff for token validation - Send existing auth to extension
+          try {
+            if (typeof window !== 'undefined' && window.postMessage && authToken.value) {
+              console.log("🔗 Extension handoff for existing auth...");
+              window.postMessage({
+                type: 'KALEIDOSYNC_AUTH_HANDOFF',
+                source: 'kaleidosync-page',
+                authToken: authToken.value,
+                refreshToken: refreshToken.value,
+                user: userData,
+                timestamp: Date.now()
+              }, '*');
+              console.log("✅ Extension auth handoff sent for existing session");
+            }
+          } catch (error) {
+            console.warn("Extension handoff failed (extension may not be installed):", error);
+          }
+          
           cleanup();
           resolve(true);
         };
 
         const handleInvalid = () => {
+          if (isResolved) return;
+          isResolved = true;
+          
           clearAuthState();
           cleanup();
           resolve(false);
@@ -83,6 +204,10 @@ export const useAuth = defineStore("auth", () => {
 
         // Cleanup function
         const cleanup = () => {
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+          }
           socketCore.off("auth:success", handleSuccess);
           socketCore.off("auth:invalid", handleInvalid);
         };
@@ -96,7 +221,10 @@ export const useAuth = defineStore("auth", () => {
         socketCore.emit("auth:validate-token", token);
 
         // Timeout after 5 seconds and fall back to HTTP
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
+          if (isResolved) return;
+          isResolved = true;
+          
           cleanup();
           console.log("Socket validation timeout, falling back to HTTP");
 
@@ -141,17 +269,41 @@ export const useAuth = defineStore("auth", () => {
 
   async function signIn() {
     try {
+      // Set user intent flag to prevent auto-firing
+      userIntentToSignIn.value = true;
+      console.log("🟢 User intent flag set to TRUE - explicit signIn called");
       isAuthenticating.value = true;
 
-      // Get wallet address and signature (simple imperative flow)
+      // Check wallet connection status and handle accordingly
       if (!wallet.isConnected) {
+        console.log("💰 No wallet connected - opening AppKit modal");
+        toast.message("Please connect your wallet...");
         await wallet.connect();
+        
+        // After modal interaction, check if connection was successful
+        if (!wallet.isConnected) {
+          toast.error("Wallet connection was cancelled or failed");
+          return;
+        }
+        toast.success("Wallet connected successfully!");
+      } else {
+        console.log("💰 Wallet already connected - proceeding with authentication");
+        toast.message("Using connected wallet for authentication...");
       }
 
-      const walletAddress = wallet.address.value;
+      let walletAddress = wallet.address.value;
       if (!walletAddress) {
-        toast.error("Failed to connect wallet");
-        return;
+        // Wallet shows connected but no address - likely a connection issue
+        console.log("💰 Wallet connected but no address - opening modal to reconnect");
+        toast.message("Please reconnect your wallet...");
+        await wallet.connect();
+        
+        // Check again after reconnection attempt
+        walletAddress = wallet.address.value;
+        if (!walletAddress) {
+          toast.error("Unable to connect wallet - please try again");
+          return;
+        }
       }
 
       // Socket-first authentication
@@ -167,6 +319,18 @@ export const useAuth = defineStore("auth", () => {
         // Handle challenge response
         const handleChallenge = async ({ message }: { message: string }) => {
           try {
+            // Only proceed if user explicitly intended to sign in
+            if (!userIntentToSignIn.value) {
+              console.log("🚫 Wallet signing blocked - no user intent (flag is false)");
+              socketCore.off("auth:challenge-response", handleChallenge);
+              socketCore.off("auth:success", handleSuccess);
+              socketCore.off("auth:error", handleError);
+              reject(new Error("No user intent to sign in"));
+              return;
+            }
+            
+            console.log("✅ User intent flag is TRUE - proceeding with signing");
+            
             console.log("🔑 Challenge received:", message.substring(0, 50) + "...");
             toast.message("Please sign the message in your wallet...");
             const signature = await wallet.signMessage(message);
@@ -190,6 +354,25 @@ export const useAuth = defineStore("auth", () => {
           refreshToken.value = newRefreshToken;
           user.value = userData;
           toast.message(`Welcome ${userData.walletAddress.slice(0, 8)}!`);
+          
+          // 🚀 Extension Auth Handoff - Send auth data to Chrome extension if installed
+          try {
+            if (typeof window !== 'undefined' && window.postMessage) {
+              console.log("🔗 Attempting extension auth handoff...");
+              window.postMessage({
+                type: 'KALEIDOSYNC_AUTH_HANDOFF',
+                source: 'kaleidosync-page',
+                authToken: accessToken,
+                refreshToken: newRefreshToken,
+                user: userData,
+                timestamp: Date.now()
+              }, '*');
+              console.log("✅ Extension auth handoff message sent");
+            }
+          } catch (error) {
+            console.warn("Extension handoff failed (extension may not be installed):", error);
+          }
+          
           if (route.value.path === "/") {
             console.log("🚀 Socket auth successful, redirecting to", VITE_DEFAULT_AUTHENTICATED_VIEW);
             router.replace(VITE_DEFAULT_AUTHENTICATED_VIEW);
@@ -210,6 +393,8 @@ export const useAuth = defineStore("auth", () => {
           socketCore.off("auth:challenge-response", handleChallenge);
           socketCore.off("auth:success", handleSuccess);
           socketCore.off("auth:error", handleError);
+          console.log("🔴 User intent flag reset to FALSE - auth cleanup");
+          userIntentToSignIn.value = false; // Reset user intent flag
         };
 
         // Set up socket listeners
@@ -228,6 +413,8 @@ export const useAuth = defineStore("auth", () => {
       throw error;
     } finally {
       isAuthenticating.value = false;
+      // Don't reset userIntentToSignIn here - let the cleanup function handle it
+      // after the Promise resolves/rejects
     }
   }
 
@@ -267,10 +454,79 @@ export const useAuth = defineStore("auth", () => {
 
   async function initialize() {
     loading.value = true;
+    ui.setLoadingDots(true);
     try {
       await validateStoredToken();
     } finally {
       loading.value = false;
+      ui.setLoadingDots(false);
+    }
+  }
+
+  // 🎭 Admin impersonation methods
+  async function startImpersonation(targetWalletAddress: string) {
+    if (!isAdmin.value) {
+      toast.error("Admin access required for impersonation");
+      throw new Error("Admin access required");
+    }
+
+    if (isImpersonating.value) {
+      toast.error("Already impersonating a user");
+      throw new Error("Already impersonating");
+    }
+
+    try {
+      // Store the original admin user
+      originalUser.value = { ...user.value };
+      
+      // Validate the target user exists via API
+      const response = await api.post("/api/admin/impersonation/validate", {
+        walletAddress: targetWalletAddress
+      });
+
+      if (!response.data.valid) {
+        throw new Error(response.data.message || "Cannot impersonate this user");
+      }
+
+      // Set the target user data
+      viewingAsUser.value = response.data.user;
+      isImpersonating.value = true;
+
+      // Notify socket server about impersonation
+      const socketCore = useSocketCore();
+      if (socketCore.connected) {
+        socketCore.emit("admin:start-impersonation", { targetWalletAddress });
+      }
+
+      toast.success(`Now viewing as ${targetWalletAddress.slice(0, 8)}...`);
+    } catch (error: any) {
+      console.error("Failed to start impersonation:", error);
+      toast.error(error.message || "Failed to start impersonation");
+      throw error;
+    }
+  }
+
+  async function stopImpersonation() {
+    if (!isImpersonating.value) {
+      return;
+    }
+
+    try {
+      // Notify socket server about stopping impersonation
+      const socketCore = useSocketCore();
+      if (socketCore.connected) {
+        socketCore.emit("admin:stop-impersonation");
+      }
+
+      // Clear impersonation state
+      originalUser.value = null;
+      viewingAsUser.value = null;
+      isImpersonating.value = false;
+
+      toast.success("Stopped impersonation - back to admin view");
+    } catch (error: any) {
+      console.error("Failed to stop impersonation:", error);
+      toast.error("Failed to stop impersonation");
     }
   }
 
@@ -282,9 +538,22 @@ export const useAuth = defineStore("auth", () => {
     loading: computed(() => loading.value),
     isAuthenticating: computed(() => isAuthenticating.value),
     isAuthenticated,
+    isAdmin,
+    isArtist,
+    isSubscriber,
+    isPaidTier,
+    isArtistOrAdmin,
+    userRole,
     signIn,
     signOut,
     initialize,
+    // 🎭 Impersonation
+    currentUser,
+    originalUser: computed(() => originalUser.value),
+    viewingAsUser: computed(() => viewingAsUser.value),
+    isImpersonating: computed(() => isImpersonating.value),
+    startImpersonation,
+    stopImpersonation,
   };
 });
 

@@ -3,12 +3,19 @@ import { defineStore, acceptHMRUpdate } from "pinia";
 import { useMediaControls } from "@vueuse/core";
 import { audioSystem } from "../classes/AudioSystemManager";
 import { useAudioAnalyser } from "../composables/audio/useAudioAnalyser";
+import { useRAF } from "./raf";
+import { useToast } from "./toast";
 import { AudioSource } from "@wearesage/shared";
 
 export const useAudio = defineStore("audio", () => {
   // Audio element and source (managed by AudioSystemManager)
   const audioElement = ref<HTMLAudioElement>();
   const src = ref<string>("");
+  const currentTrackId = ref<string | null>(null);
+  
+  // Toast for "Now Playing" notifications
+  const toast = useToast();
+  const lastToastTrackId = ref<string | null>(null);
   
   // Get element from audio system manager
   if (typeof window !== 'undefined') {
@@ -50,9 +57,12 @@ export const useAudio = defineStore("audio", () => {
 
   // Use AudioSystemManager for bulletproof play/pause
   const play = async () => {
+    console.log('🔊 Attempting to play audio...');
     const success = await audioSystem.playAudio();
     if (success) {
       console.log('🔊 Audio playing via AudioSystemManager');
+    } else {
+      console.warn('🔊 AudioSystemManager playAudio() returned false');
     }
     return success;
   };
@@ -63,7 +73,19 @@ export const useAudio = defineStore("audio", () => {
 
   // Audio analysis using the SAUCE (useAudioAnalyser + AudioSystemManager)
   const { initialize: initializeAnalyser, volume, stream, cleanup: cleanupAnalyser, initialized: analyserInitialized } = useAudioAnalyser();
+  
+  // RAF loop for continuous audio analysis (runs regardless of audio element state)
+  const raf = useRAF();
+  raf.add((now) => {
+    if (analyserInitialized.value) {
+      const result = audioSystem.tick(raf.frameRate);
+      volume.value = result.volume;
+      stream.value = result.stream;
+    }
+  }, { id: 'audio-analysis' });
+  
   const initialized = ref(false);
+  const isLoading = ref(false);
   
   // Track if audio system is initialized
   const userGestureInitialized = computed(() => {
@@ -85,6 +107,7 @@ export const useAudio = defineStore("audio", () => {
    */
   function setSource(url: string) {
     console.log("🔊 Setting audio source:", url);
+    isLoading.value = true; // Start loading
     src.value = url;
     audioSystem.setAudioSource(url);
   }
@@ -115,7 +138,7 @@ export const useAudio = defineStore("audio", () => {
    * Initialize audio with user gesture using AudioSystemManager + AudioAnalyser
    * Must be called synchronously within a user interaction event
    */
-  function initializeAudio() {
+  async function initializeAudio() {
     if (userGestureInitialized.value) {
       console.log("🔊 Audio already initialized via AudioSystemManager");
       return true;
@@ -133,12 +156,9 @@ export const useAudio = defineStore("audio", () => {
         const audioContext = audioSystem.getAudioContext();
         const analyserNode = audioSystem.getAnalyserNode();
         
-        if (audioElement.value && audioContext && analyserNode) {
-          // Initialize the AudioAnalyser with shared context and nodes
-          initializeAnalyser(audioElement.value, {
-            audioContext,
-            analyserNode
-          });
+        if (audioElement.value) {
+          // Initialize the consolidated AudioSystemManager for audio element
+          await initializeAnalyser(audioElement.value);
           
           initialized.value = true;
           console.log("🔊 Audio system + AudioAnalyser initialized successfully!");
@@ -201,6 +221,79 @@ export const useAudio = defineStore("audio", () => {
   }
 
   /**
+   * Show "Now Playing" toast notification
+   */
+  function showNowPlayingToast(track: any) {
+    if (!track || track.id === lastToastTrackId.value) return;
+    
+    console.log('🎵 Now Playing:', track.title, 'by', track.artist);
+    
+    const message = `🎵 Now Playing: "${track.title}" by ${track.artist}`;
+    toast.message(message);
+    
+    lastToastTrackId.value = track.id;
+  }
+
+  /**
+   * Update media session metadata for the currently loaded track
+   */
+  async function updateMediaSessionMetadata(track: any) {
+    if (!track) {
+      // Clear metadata if no track
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = null;
+      }
+      return;
+    }
+
+    try {
+      // Check if the current source supports metadata
+      const { useSources } = await import('./sources');
+      const sources = useSources();
+      const mediaConfig = sources.mediaSessionManager.getCurrentConfig();
+      
+      // Only update metadata if current source has media session enabled and supports metadata
+      if (!mediaConfig?.enabled || !mediaConfig.metadata) {
+        console.log('🎵 Skipping metadata update - current source does not support metadata');
+        return;
+      }
+
+      // Use enableTrack if available and audio is properly initialized
+      if (typeof enableTrack === 'function' && audioElement.value && userGestureInitialized.value) {
+        enableTrack({
+          title: track.title,
+          artist: track.artist,
+          album: track.album || '',
+          artwork: track.artwork ? [
+            { src: track.artwork.small || '', sizes: '64x64', type: 'image/jpeg' },
+            { src: track.artwork.medium || '', sizes: '300x300', type: 'image/jpeg' },
+            { src: track.artwork.large || '', sizes: '640x640', type: 'image/jpeg' },
+          ].filter(art => art.src) : [],
+        });
+
+        console.log('🎵 Updated track metadata via useMediaControls for:', track.title);
+      } else {
+        // Fallback to manual Media Session API
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: track.title,
+            artist: track.artist,
+            album: track.album || '',
+            artwork: track.artwork ? [
+              { src: track.artwork.small || '', sizes: '64x64', type: 'image/jpeg' },
+              { src: track.artwork.medium || '', sizes: '300x300', type: 'image/jpeg' },
+              { src: track.artwork.large || '', sizes: '640x640', type: 'image/jpeg' },
+            ].filter(art => art.src) : [],
+          });
+          console.log('🎵 Updated track metadata via fallback Media Session API for:', track.title);
+        }
+      }
+    } catch (error) {
+      console.warn('Could not update media session metadata:', error);
+    }
+  }
+
+  /**
    * Load and play a queue track
    */
   async function playTrack(track: any) {
@@ -223,6 +316,9 @@ export const useAudio = defineStore("audio", () => {
     }
 
     console.log("🔊 Loading track:", track.title, "by", track.artist);
+
+    // Update current track ID for duplicate prevention
+    currentTrackId.value = track.sourceId;
 
     // Handle Audius stream URL fetching
     if (audioUrl.startsWith("audius-stream:")) {
@@ -261,25 +357,36 @@ export const useAudio = defineStore("audio", () => {
         if (streamUrl) {
           console.log("🔊 Got Audius stream URL:", streamUrl);
           setSource(streamUrl);
+          
+          // Update media session metadata now that we're loading this track
+          await updateMediaSessionMetadata(track);
+          
+          // Show "Now Playing" toast
+          showNowPlayingToast(track);
         } else {
           throw new Error("No stream URL returned");
         }
       } catch (error) {
         console.error("🔊 Failed to fetch Audius stream URL:", error);
+        // Clear current track ID on error
+        currentTrackId.value = null;
         // No fallback - just return false
         return false;
       }
     } else {
       // Regular URL, use directly
       setSource(audioUrl);
+      
+      // Update media session metadata now that we're loading this track
+      await updateMediaSessionMetadata(track);
+      
+      // Show "Now Playing" toast
+      showNowPlayingToast(track);
     }
 
-    // Reset position
-    seek(0);
-
-    // Auto-play with AudioSystemManager (preserves gesture chain)
-    const success = await play();
-    return success;
+    // Autoplay is enabled on the audio element, so just setting src should trigger playback
+    console.log('🔊 Track loaded with autoplay enabled');
+    return true;
   }
 
   // Watch for track end to auto-advance
@@ -312,18 +419,39 @@ export const useAudio = defineStore("audio", () => {
   // Watch for audio element from AudioSystemManager
   watch(
     audioElement,
-    (element) => {
+    async (element) => {
       if (element && !initialized.value) {
         console.log("🔊 Audio element connected from AudioSystemManager");
         
-        // Try to initialize with shared context if available
-        const audioContext = audioSystem.getAudioContext();
-        const analyserNode = audioSystem.getAnalyserNode();
+        // Initialize with consolidated AudioSystemManager
+        await initializeAnalyser(element);
+        initialized.value = true;
         
-        if (audioContext && analyserNode) {
-          initializeAnalyser(element, { audioContext, analyserNode });
-          initialized.value = true;
-        }
+        // Set up loading state event listeners
+        const handleCanPlay = () => {
+          console.log("🔊 Audio can play - loading complete");
+          isLoading.value = false;
+        };
+        
+        const handleLoadStart = () => {
+          console.log("🔊 Audio load started");
+          isLoading.value = true;
+        };
+        
+        // Add event listeners for loading state
+        element.addEventListener('loadstart', handleLoadStart);
+        element.addEventListener('canplay', handleCanPlay);
+        element.addEventListener('playing', handleCanPlay);
+        
+        // Clean up event listeners when element changes
+        const cleanup = () => {
+          element.removeEventListener('loadstart', handleLoadStart);
+          element.removeEventListener('canplay', handleCanPlay);
+          element.removeEventListener('playing', handleCanPlay);
+        };
+        
+        // Store cleanup function for later use
+        (element as any)._audioLoadingCleanup = cleanup;
       }
     },
     { immediate: true }
@@ -342,6 +470,7 @@ export const useAudio = defineStore("audio", () => {
     waiting,
     ended,
     muted,
+    isLoading,
 
     // Audio analysis (from useAudioAnalyser - the SAUCE!)
     volume, // Sophisticated volume analysis with smoothing
@@ -365,6 +494,9 @@ export const useAudio = defineStore("audio", () => {
     playTrack,
     getAudioUrlForTrack,
     initializeAudio,
+    currentTrackId,
+    updateMediaSessionMetadata,
+    showNowPlayingToast,
   };
 });
 

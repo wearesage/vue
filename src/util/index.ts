@@ -82,9 +82,6 @@ export * from "./add-uniform-to-sketch";
 export * from "./patch-uniform-value-with-name";
 export * from "./generate-variant";
 
-// Complex utilities (kept as original files)
-export * from "./chess";
-export * from "./globe";
 export * from "./transformLegacySketch";
 
 // API client

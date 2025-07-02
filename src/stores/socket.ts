@@ -71,6 +71,7 @@ export const useSocket = defineStore("socket", () => {
     }
 
     connecting.value = true;
+    console.log(`🔌 Attempting to connect to socket server: ${serverUrl}`);
 
     try {
       socket.value = io(serverUrl, {

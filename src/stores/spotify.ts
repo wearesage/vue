@@ -5,6 +5,7 @@ import { useToast } from "./toast";
 import { useAuth } from "./auth";
 import { useEchoNest } from "../composables/audio";
 import { useQueue } from "./queue";
+import { useSources } from "./sources";
 import { AudioSource } from "@wearesage/shared";
 import type { QueueTrack } from "./queue";
 import { adaptSpotifyTrack } from "../composables/audio/useTrackAdapter";
@@ -13,16 +14,29 @@ export const useSpotify = defineStore("spotify", () => {
   const toast = useToast();
   const auth = useAuth();
   const queue = useQueue();
+  const sources = useSources();
   const profile = computed(() => auth?.user?.spotifyProfile);
   const analysisData = shallowRef<SpotifyAnalysis | null>(null);
   const { stream, volume, progress, position, track, playing, latency } = useEchoNest(analysisData);
   const fetchInterval = ref();
+  const lastQueueClearTime = ref(0);
 
-  watch(progress, (val: number) => val === 1 && getCurrentAnalysis());
+  watch(progress, (val: number) => {
+    // Only fetch new analysis if Spotify is the active source and track ended
+    if (val === 1 && sources.source === AudioSource.SPOTIFY) {
+      getCurrentAnalysis();
+    }
+  });
 
   // Sync Spotify track to queue when it changes
   watch(track, (newTrack) => {
     if (!newTrack) return;
+    
+    // Only sync to queue if Spotify is the active source
+    if (sources.source !== AudioSource.SPOTIFY) {
+      console.log('🎵 Spotify: Track changed but not active source, skipping queue update');
+      return;
+    }
     
     // Use the track adapter to properly convert Spotify data
     const adaptedTrack = adaptSpotifyTrack(newTrack);
@@ -58,7 +72,8 @@ export const useSpotify = defineStore("spotify", () => {
 
   // Sync playing state from Spotify to queue
   watch(playing, (isPlaying) => {
-    if (queue.currentTrack?.source === AudioSource.SPOTIFY) {
+    // Only sync playing state if Spotify is the active source
+    if (sources.source === AudioSource.SPOTIFY && queue.currentTrack?.source === AudioSource.SPOTIFY) {
       queue.queue.isPlaying = isPlaying;
     }
   });
@@ -75,7 +90,22 @@ export const useSpotify = defineStore("spotify", () => {
 
   async function getCurrentAnalysis() {
     try {
-      analysisData.value = await spotifyApi.getCurrentAnalysis();
+      const newAnalysisData = await spotifyApi.getCurrentAnalysis();
+      
+      // If Spotify reports nothing playing AND Spotify is the active source
+      if (!newAnalysisData && sources.source === AudioSource.SPOTIFY) {
+        // Throttle queue clearing to prevent spam (max once every 10 seconds)
+        const now = Date.now();
+        if (now - lastQueueClearTime.value > 10000) {
+          console.log('🎵 Spotify: No track playing (commercial/track ended), clearing queue');
+          queue.clearQueue();
+          lastQueueClearTime.value = now;
+        }
+        analysisData.value = null;
+        return;
+      }
+      
+      analysisData.value = newAnalysisData;
       if (!analysisData.value) startInterval();
     } catch (error) {
       console.error("Failed to get current analysis:", error);

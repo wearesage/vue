@@ -1,6 +1,6 @@
 {
   "name": "@wearesage/vue",
-  "version": "2.1.4",
+  "version": "2.1.6",
   "main": "./src/client.ts",
   "types": "./src/client.ts",
   "exports": {
@@ -52,8 +52,7 @@
     "sass": "1.89.1",
     "typescript": "5.8.3",
     "vite": "6.3.5",
-    "vue": "3.5.16",
-    "@wearesage/vue": "4.5.1"
+    "vue": "3.5.17"
   },
   "dependencies": {
     "@codemirror/commands": "6.8.1",
@@ -81,7 +80,8 @@
     "@vueuse/core": "13.3.0",
     "@vueuse/head": "2.0.0",
     "@wearesage/globe": "file:../@wearesage-globe",
-    "@wearesage/shared": "file:../shared",
+    "@wearesage/shared": "1.4.0",
+    "@wearesage/sass": "file:../sass",
     "axios": "^1.10.0",
     "bs58": "^6.0.0",
     "d3-array": "3.2.4",
@@ -99,6 +99,7 @@
     "lezer-glsl": "0.6.0",
     "maplibre-gl": "5.6.0",
     "markdown-it": "14.1.0",
+    "music-metadata": "^11.6.0",
     "socket.io-client": "^4.8.1",
     "thememirror": "2.0.1",
     "three": "0.173.0",

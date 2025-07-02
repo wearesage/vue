@@ -1,11 +1,12 @@
 import { defineStore, storeToRefs, acceptHMRUpdate } from "pinia";
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onBeforeUnmount } from "vue";
 import { useRoute } from "../router/sage-router";
 import { useSocketCore } from "./socket-core";
 import { useAuth } from "./auth";
 import { useSocketProject } from "./socket-project";
 import { useSources } from "./sources";
 import { useQueue } from "./queue";
+import { useSpotify } from "./spotify";
 import {
   CurrentPage,
   ActivityType,
@@ -40,9 +41,6 @@ export const useUserState = defineStore("userState", () => {
   const sources = useSources();
   const queueStore = useQueue();
 
-  // Initialize auth since user state depends on it
-  auth.initialize();
-
   // Current state
   const currentPage = ref<CurrentPage>(CurrentPage.HOME);
   const activityType = ref<ActivityType>(ActivityType.BROWSING);
@@ -50,6 +48,16 @@ export const useUserState = defineStore("userState", () => {
   const audioTrack = ref<string | undefined>();
   const audioPosition = ref<number | undefined>();
   const geoLocation = ref<{ lat: number; lng: number } | undefined>();
+  
+  // Additional context state
+  const deviceType = ref<"desktop" | "mobile" | "tablet">(
+    /Mobile|Android|iPhone|iPad/.test(navigator.userAgent) 
+      ? (/iPad|tablet/.test(navigator.userAgent) ? "tablet" : "mobile")
+      : "desktop"
+  );
+  const clientPlatform = ref<"web" | "electron" | "mobile">("web"); // Detect platform context
+  const currentShaderId = ref<string | undefined>();
+  const currentProjectId = ref<string | undefined>();
 
   // User preferences state
   const preferences = ref<UserPreferences>({ ...DEFAULT_USER_PREFERENCES });
@@ -212,8 +220,12 @@ export const useUserState = defineStore("userState", () => {
       [UserStateField.PAGE]: currentPage.value,
       [UserStateField.ACTIVITY_TYPE]: activityType.value,
       [UserStateField.AUDIO_SOURCE]: audioSource.value,
+      [UserStateField.DEVICE_TYPE]: deviceType.value === "desktop" ? 0 : deviceType.value === "mobile" ? 1 : 2,
+      [UserStateField.CLIENT_PLATFORM]: clientPlatform.value === "web" ? 0 : clientPlatform.value === "electron" ? 1 : 2,
       ...(audioTrack.value && { [UserStateField.AUDIO_TRACK]: audioTrack.value }),
       ...(audioPosition.value !== undefined && { [UserStateField.AUDIO_POSITION]: audioPosition.value }),
+      ...(currentShaderId.value && { [UserStateField.SHADER_ID]: currentShaderId.value }),
+      ...(currentProjectId.value && { [UserStateField.PROJECT_ID]: currentProjectId.value }),
       ...(geoLocation.value && {
         [UserStateField.GEO_LAT]: geoLocation.value.lat,
         [UserStateField.GEO_LNG]: geoLocation.value.lng,
@@ -237,8 +249,12 @@ export const useUserState = defineStore("userState", () => {
       page: currentPage.value,
       activityType: activityType.value,
       audioSource: audioSource.value,
+      deviceType: deviceType.value === "desktop" ? 0 : deviceType.value === "mobile" ? 1 : 2,
+      clientPlatform: clientPlatform.value === "web" ? 0 : clientPlatform.value === "electron" ? 1 : 2,
       ...(audioTrack.value && { audioTrack: audioTrack.value }),
       ...(audioPosition.value !== undefined && { audioPosition: audioPosition.value }),
+      ...(currentShaderId.value && { shaderId: currentShaderId.value }),
+      ...(currentProjectId.value && { projectId: currentProjectId.value }),
       ...(geoLocation.value && {
         geoLat: geoLocation.value.lat,
         geoLng: geoLocation.value.lng,
@@ -287,6 +303,30 @@ export const useUserState = defineStore("userState", () => {
     broadcastUserState();
   }
 
+  /**
+   * Update current shader ID
+   */
+  function updateShaderId(shaderId: string | undefined) {
+    currentShaderId.value = shaderId;
+    broadcastUserState();
+  }
+
+  /**
+   * Update current project ID
+   */
+  function updateProjectId(projectId: string | undefined) {
+    currentProjectId.value = projectId;
+    broadcastUserState();
+  }
+
+  /**
+   * Update client platform (useful for electron detection)
+   */
+  function updateClientPlatform(platform: "web" | "electron" | "mobile") {
+    clientPlatform.value = platform;
+    broadcastUserState();
+  }
+
   watch(
     () => route.value.name,
     (newRouteName) => {
@@ -311,55 +351,37 @@ export const useUserState = defineStore("userState", () => {
     { immediate: true }
   );
 
-  // Watch for Spotify track changes and broadcast
-  const getSpotifyStore = () => {
-    try {
-      const { useSpotify } = require("./spotify");
-      return useSpotify();
-    } catch {
-      return null;
-    }
-  };
-
   // Set up reactive watching for Spotify track changes
-  const spotify = getSpotifyStore();
-  if (spotify) {
-    watch(
-      () => spotify.track?.name,
-      (newTrack) => {
-        if (newTrack && audioSource.value === AudioSource.SPOTIFY) {
-          const trackId = `${spotify.track?.id || ""}:${spotify.track?.name || ""}`;
-          if (trackId !== audioTrack.value) {
-            audioTrack.value = trackId;
-            broadcastUserState();
-          }
-        }
-      }
-    );
-
-    watch(
-      () => spotify.position,
-      (newPosition) => {
-        if (audioSource.value === AudioSource.SPOTIFY && newPosition !== audioPosition.value) {
-          audioPosition.value = newPosition;
-          // Broadcast position updates less frequently (every 5 seconds)
-          if (Math.floor(newPosition / 5000) !== Math.floor((audioPosition.value || 0) / 5000)) {
-            broadcastUserState();
-          }
-        }
-      }
-    );
-  }
+  const spotify = useSpotify();
 
   watch(
-    () => socket.connected,
-    (connected) => {
-      if (connected) setUserOnline();
+    () => spotify.track?.name,
+    (newTrack) => {
+      if (newTrack && audioSource.value === AudioSource.SPOTIFY) {
+        const trackId = `${spotify.track?.id || ""}:${spotify.track?.name || ""}`;
+        if (trackId !== audioTrack.value) {
+          audioTrack.value = trackId;
+          broadcastUserState();
+        }
+      }
     }
   );
 
-  // Listen for server responses with user's saved preferences
-  socket.on("user-state:preferences", (data: { audioSource?: AudioSource; audioTrack?: string }) => {
+  watch(
+    () => spotify.position,
+    (newPosition) => {
+      if (audioSource.value === AudioSource.SPOTIFY && newPosition !== audioPosition.value) {
+        audioPosition.value = newPosition;
+        // Broadcast position updates less frequently (every 5 seconds)
+        if (Math.floor(newPosition / 5000) !== Math.floor((audioPosition.value || 0) / 5000)) {
+          broadcastUserState();
+        }
+      }
+    }
+  );
+
+  // Socket event handlers (defined here for proper cleanup)
+  const handlePreferences = (data: { audioSource?: AudioSource; audioTrack?: string }) => {
     console.log("📡 Received user preferences from server:", data);
 
     // Auto-select the user's last audio source
@@ -367,20 +389,88 @@ export const useUserState = defineStore("userState", () => {
       audioSource.value = data.audioSource;
 
       // Update sources store to match
-      try {
-        const { useSources } = require("./sources");
-        const sourcesStore = useSources();
-        sourcesStore.setSourceFromServer(data.audioSource);
-      } catch (error) {
-        console.warn("Could not auto-select source in sources store:", error);
-      }
+      const sourcesStore = useSources();
+      sourcesStore.setSourceFromServer(data.audioSource);
     }
 
     // Set last track if available
     if (data.audioTrack) {
       audioTrack.value = data.audioTrack;
     }
-  });
+  };
+
+  const handleAuthSuccess = (data: { user: any }) => {
+    if (data.user.preferences) {
+      loadPreferences(data.user.preferences);
+    }
+  };
+
+  const handlePreferencesUpdated = (data: { preferences: UserPreferences }) => {
+    // Update local state with server response (in case server modified anything)
+    preferences.value = data.preferences;
+    console.log("🎛️ Preferences updated successfully");
+  };
+
+  const handleSocketError = (error: { message: string; code?: string }) => {
+    if (error.code === "AUTH_REQUIRED" || error.code === "UPDATE_FAILED") {
+      console.error("🎛️ Preference update failed:", error.message);
+      isSavingPreferences.value = false;
+    }
+  };
+
+  const handlePageHidden = () => {
+    console.log("👁️ Page hidden - setting user temporarily offline");
+    // Don't call setUserOffline() here as user might just be switching tabs
+    // Server can track this separately if needed
+  };
+
+  const handlePageVisible = () => {
+    console.log("👁️ Page visible - user returned, updating state");
+    // Re-broadcast current state when user returns
+    broadcastUserState();
+  };
+
+  // Cleanup function for removing all socket event listeners
+  const removeAllSocketEventListeners = () => {
+    socket.off("user-state:preferences", handlePreferences);
+    socket.off("auth:success", handleAuthSuccess);
+    socket.off("user-state:preferences-updated", handlePreferencesUpdated);
+    socket.off("user-state:error", handleSocketError);
+    socket.off("user-state:page-hidden", handlePageHidden);
+    socket.off("user-state:page-visible", handlePageVisible);
+    console.log("🧹 Removed all user-state socket event listeners");
+  };
+
+  // Watch socket connection and set up event listeners when connected
+  watch(
+    () => socket.connected,
+    async (connected) => {
+      if (connected) {
+        setUserOnline();
+        
+        // Set up socket event listeners
+        socket.on("user-state:preferences", handlePreferences);
+        socket.on("auth:success", handleAuthSuccess);
+        socket.on("user-state:preferences-updated", handlePreferencesUpdated);
+        socket.on("user-state:error", handleSocketError);
+        socket.on("user-state:page-hidden", handlePageHidden);
+        socket.on("user-state:page-visible", handlePageVisible);
+
+        // Set up messaging listeners
+        try {
+          const { useSocketMessaging } = await import('./socket-messaging');
+          const messaging = useSocketMessaging();
+          messaging.setupMessagingListeners();
+        } catch (error) {
+          console.warn('Failed to setup messaging listeners:', error);
+        }
+      } else {
+        // Clean up event listeners on disconnect
+        removeAllSocketEventListeners();
+      }
+    },
+    { immediate: true }
+  );
 
   watch(
     () => [auth.isAuthenticated, socket.connected, auth.user?.walletAddress && auth.authToken],
@@ -410,27 +500,6 @@ export const useUserState = defineStore("userState", () => {
     { immediate: true }
   );
 
-  // Listen for auth success to load preferences
-  socket.on("auth:success", (data: { user: any }) => {
-    if (data.user.preferences) {
-      loadPreferences(data.user.preferences);
-    }
-  });
-
-  // Listen for preference update confirmations
-  socket.on("user-state:preferences-updated", (data: { preferences: UserPreferences }) => {
-    // Update local state with server response (in case server modified anything)
-    preferences.value = data.preferences;
-    console.log("🎛️ Preferences updated successfully");
-  });
-
-  // Handle socket errors
-  socket.on("user-state:error", (error: { message: string; code?: string }) => {
-    if (error.code === "AUTH_REQUIRED" || error.code === "UPDATE_FAILED") {
-      console.error("🎛️ Preference update failed:", error.message);
-      isSavingPreferences.value = false;
-    }
-  });
 
   // Reset preferences to defaults on logout
   watch(
@@ -448,6 +517,23 @@ export const useUserState = defineStore("userState", () => {
     }
   );
 
+  // Cleanup on component unmount
+  onBeforeUnmount(() => {
+    console.log("🧹 User state store unmounting - cleaning up");
+    
+    // Set user offline before unmounting
+    setUserOffline();
+    
+    // Clean up any pending preference saves
+    if (preferenceUpdateTimeout) {
+      clearTimeout(preferenceUpdateTimeout);
+      preferenceUpdateTimeout = null;
+    }
+    
+    // Remove socket event listeners
+    removeAllSocketEventListeners();
+  });
+
   return {
     // State
     currentPage: computed(() => currentPage.value),
@@ -456,6 +542,12 @@ export const useUserState = defineStore("userState", () => {
     audioTrack: computed(() => audioTrack.value),
     audioPosition: computed(() => audioPosition.value),
     geoLocation: computed(() => geoLocation.value),
+    
+    // Additional context state
+    deviceType: computed(() => deviceType.value),
+    clientPlatform: computed(() => clientPlatform.value),
+    currentShaderId: computed(() => currentShaderId.value),
+    currentProjectId: computed(() => currentProjectId.value),
 
     // Computed
     isOnHomepage,
@@ -482,6 +574,9 @@ export const useUserState = defineStore("userState", () => {
     updateAudioState,
     updateActivity,
     updateLocation,
+    updateShaderId,
+    updateProjectId,
+    updateClientPlatform,
     setUserOnline,
     setUserOffline,
     broadcastUserState,

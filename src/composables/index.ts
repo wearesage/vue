@@ -2,7 +2,7 @@
 export * from "./graphics/useAnimation";
 export * from "./graphics/useArtboard";
 export * from "./graphics/useCanvas2d";
-export * from "./graphics/useGLSLEditor";
+// export * from "./graphics/useGLSLEditor"; // Moved to @wearesage/editor/vue
 export * from "./graphics/useGraph";
 export * from "./graphics/useNormalizedShaderError";
 export * from "./graphics/useParticleSystem";
@@ -23,9 +23,6 @@ export * from "./audio/useGetAudiusPlaylistById";
 export * from "./audio/useGetAudiusUserByHandle";
 export * from "./audio/useRandomAdeleTrack";
 export * from "./audio/useTrackAdapter";
-// Games
-export * from "./games/useChessMatch";
-export * from "./games/useChessPieces";
 
 // AI & Chat
 export * from "./ai/useChat";
@@ -61,6 +58,7 @@ export * from "./collaboration/useProjectCollaboration";
 
 // Auth
 export * from "./auth/useWallet";
+export * from "./auth/useAdmin";
 
 // App
 // export * from "./app/useAppInitialization"; // DELETED - no longer needed with Sage Router!

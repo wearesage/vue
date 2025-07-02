@@ -1,4 +1,5 @@
 import { ref, computed, watch, type Ref } from "vue";
+import { pause } from "../util/pause";
 
 // Dynamic import will be set by createSageRouter
 let routes: any[] = [];
@@ -99,14 +100,14 @@ function go(delta: number) {
 function cleanQuery(keysToRemove: string | string[]) {
   const keys = Array.isArray(keysToRemove) ? keysToRemove : [keysToRemove];
   const newQuery = new URLSearchParams(currentQuery.value);
-  
-  keys.forEach(key => newQuery.delete(key));
-  
+
+  keys.forEach((key) => newQuery.delete(key));
+
   const url = new URL(currentPath.value, window.location.origin);
   url.search = newQuery.toString();
-  
+
   history.replaceState({}, "", url.toString());
-  
+
   // Update reactive state
   currentQuery.value = newQuery;
 }
@@ -121,17 +122,24 @@ export async function createSageRouter(routesModule?: any): Promise<SageRouter> 
     console.log("🔥 Sage Router: Loaded", routes.length, "routes from parameter");
   } else {
     // Fallback: try to dynamically import generated routes
+    // Only attempt this if we're not in the shared vue package itself
     try {
-      const generatedRoutes = await import("./generated-routes.js").catch(() =>
-        import("../router/generated-routes.js").catch(() => import("/src/router/generated-routes.js"))
-      );
+      await pause(50);
+      // Try to detect if we're in a consuming project with generated routes
+      const routesPath = "../routes.generated.ts";
+      const generatedRoutes = await import(/* @vite-ignore */ routesPath);
       routes = generatedRoutes.routes;
       matchRoute = generatedRoutes.matchRoute;
       extractParams = generatedRoutes.extractParams;
       console.log("🔥 Sage Router: Loaded", routes.length, "routes via dynamic import");
     } catch (error) {
-      console.warn("⚠️ Sage Router: Could not load generated routes:", error);
+      // This is expected when the router is used in the shared vue package
+      // or when routes haven't been generated yet
+      console.log("🔧 Sage Router: No generated routes found, using empty routes (will be provided by consuming app)");
       routes = [];
+      // Set up basic fallback functions
+      matchRoute = () => null;
+      extractParams = () => ({});
     }
   }
 

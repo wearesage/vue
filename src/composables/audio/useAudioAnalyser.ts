@@ -1,60 +1,54 @@
-import { ref, shallowRef, computed } from "vue";
-import AudioAnalyser, { definitions } from "../../classes/AudioAnalyser";
+import { ref, computed } from "vue";
+import { audioSystem } from "../../classes/AudioSystemManager";
 import { useRAF } from "../../stores/raf";
 
 export function useAudioAnalyser() {
   const raf = useRAF();
-  const instance = shallowRef<AudioAnalyser | null>(new AudioAnalyser({ definitions } as any));
   const stream = ref(0);
   const volume = ref(1);
   const time = computed(() => raf.time);
-  const audio = ref();
   const initialized = ref(false);
 
-  function tick() {
-    if (typeof audio.value?.paused !== "boolean" || audio.value.paused === true) {
-      stream.value += 0.003;
-      volume.value = 1;
-      return;
-    }
+  // Note: RAF loop management moved to audio store
+  // These refs will be updated by the audio store's RAF loop
 
-    if (audio.value.paused === false && typeof instance.value?.tick === "function") {
-      const values = instance.value?.tick(raf.frameRate) as any;
-      if (!isNaN(values.stream)) stream.value = values.stream;
-      if (!isNaN(values.volume)) volume.value = values.volume;
-    }
-  }
-
-  function initialize(element: HTMLAudioElement, options?: { audioContext?: AudioContext; analyserNode?: AnalyserNode }) {
-    if (instance.value && element) {
-      audio.value = element;
-      instance?.value?.destroy?.();
-      
-      // Pass shared context and analyser to AudioAnalyser class
-      instance.value?.initialize({ 
-        element,
-        audioContext: options?.audioContext,
-        analyserNode: options?.analyserNode
-      });
-      
-      raf.remove("audio");
-      raf.add(tick, {
-        id: "audio",
-      });
+  async function initialize(element: HTMLAudioElement) {
+    if (element) {
+      // Initialize audio element source in the consolidated AudioSystemManager
+      await audioSystem.initializeAudioElement();
       initialized.value = true;
       
-      console.log('🎵 useAudioAnalyser initialized with', options ? 'shared' : 'new', 'AudioContext');
+      console.log('🎵 useAudioAnalyser initialized with consolidated AudioSystemManager');
     }
   }
 
   function cleanup() {
-    raf.remove("audio");
-    instance?.value?.destroy?.();
+    // RAF loop is managed by audio store, nothing to clean up here
+  }
+
+  // Add method to initialize microphone
+  async function initializeMicrophone(): Promise<boolean> {
+    const success = await audioSystem.initializeMicrophone();
+    if (success) {
+      initialized.value = true;
+      console.log('🎵 useAudioAnalyser initialized microphone with consolidated AudioSystemManager');
+    }
+    return success;
+  }
+
+  // Add method to initialize Spotify
+  async function initializeSpotify(spotifyVolumeGetter: () => number): Promise<void> {
+    audioSystem.setSpotifyVolumeGetter(spotifyVolumeGetter);
+    await audioSystem.initializeSpotifySource();
+    initialized.value = true;
+    console.log('🎵 useAudioAnalyser initialized Spotify with consolidated AudioSystemManager');
   }
 
   return {
-    instance,
+    audioSystem, // Expose audioSystem for advanced usage
     initialize,
+    initializeMicrophone,
+    initializeSpotify,
     stream,
     volume,
     time,
