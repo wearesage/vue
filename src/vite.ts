@@ -4,7 +4,7 @@ import tsconfigPaths from "vite-tsconfig-paths";
 import AutoImport from "unplugin-auto-import/vite";
 import Components from "unplugin-vue-components/vite";
 import { templateCompilerOptions } from "@tresjs/core";
-import { type CSSOptions, type PluginOption, type AliasOptions, type UserConfig } from "vite";
+import { type CSSOptions, type PluginOption, type UserConfig, type ResolveOptions } from "vite";
 import { type DeprecationOrId } from "sass";
 
 const AUTO_IMPORTED_LIBS = [`vue`, `vue/macros`, `pinia`];
@@ -23,6 +23,11 @@ export interface SageViteConfig {
     target?: string;
     path?: string;
   };
+  // Allow passing through Vite config options for the sync version
+  plugins?: PluginOption[];
+  css?: CSSOptions;
+  optimizeDeps?: any;
+  resolve?: ResolveOptions;
 }
 
 export const plugins: PluginOption[] = [
@@ -57,7 +62,7 @@ export function createSagePlugins(config: SageViteConfig = {}): Promise<PluginOp
 }
 
 export async function getPluginsWithSageRouter(): Promise<PluginOption[]> {
-  const { sageRouter } = await import("./router/vite-plugin-sage-router.ts");
+  const { sageRouter } = await import("./router/vite-plugin-sage-router");
   return [
     sageRouter({
       pagesDir: "src/pages",
@@ -68,7 +73,7 @@ export async function getPluginsWithSageRouter(): Promise<PluginOption[]> {
 }
 
 export async function createSagePluginsWithRouter(config: SageViteConfig = {}): Promise<PluginOption[]> {
-  const { sageRouter } = await import("./router/vite-plugin-sage-router.ts");
+  const { sageRouter } = await import("./router/vite-plugin-sage-router");
   const basePlugins = await createSagePlugins(config);
   
   const routerConfig = typeof config.router === 'object' ? config.router : {};
@@ -84,8 +89,10 @@ export async function createSagePluginsWithRouter(config: SageViteConfig = {}): 
   ];
 }
 
-export const resolve: AliasOptions = {
-  '@wearesage/sass': '@wearesage/sass'
+export const resolve: any = {
+  alias: {
+    '@wearesage/sass': '@wearesage/sass'
+  }
 };
 
 export const css: CSSOptions = {

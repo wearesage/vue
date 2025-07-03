@@ -2,19 +2,18 @@ import { ref, shallowRef, computed, watch } from "vue";
 import { defineStore, acceptHMRUpdate } from "pinia";
 import { useRAF } from "./raf";
 import type { Sketch, Variant, AddUniformProps } from "../types/sketches";
-import { useStudies } from "../composables";
+import { useStudy } from "../composables";
 import { buildVariantInterpolator, clone, sample, addUniformToSketch, patchUniformValueWithName, generateVariant } from "../util";
 
 type SelectionMethod = "pointer" | "keyboard" | "internal";
-
-const PUBLISHED_STUDY = "66f2980c92cc9d303e380427";
 
 export const useSketches = defineStore("sketches", () => {
   const raf = useRAF();
   const sketch = shallowRef<Sketch | null>(null);
   const activeSketchId = computed(() => sketch.value?._id || null);
-  const activeStudyId = ref(PUBLISHED_STUDY);
-  const { iterations, index } = useStudies(activeStudyId, activeSketchId);
+  // No longer need activeStudyId - we're loading ShaderTom's sketches directly
+  const activeStudyId = ref("shader-tom-collection"); // Just for compatibility
+  const { iterations, index, loading, error } = useStudy(activeStudyId, activeSketchId);
   const shader = ref();
   const uniforms = ref<Variant>({});
   const variant = ref(0);
@@ -215,6 +214,8 @@ export const useSketches = defineStore("sketches", () => {
     keyboardIndex,
     selectSketch,
     iterations,
+    loading, // Loading state for ShaderTom sketches
+    error,   // Error state for ShaderTom sketches
     shaderError,
     magicTween,
     tweenTo,

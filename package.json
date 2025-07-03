@@ -1,6 +1,7 @@
 {
   "name": "@wearesage/vue",
-  "version": "2.2.4",
+  "version": "2.3.0",
+  "type": "module",
   "main": "./src/client.ts",
   "types": "./src/client.ts",
   "exports": {
@@ -9,12 +10,12 @@
       "default": "./src/client.ts"
     },
     "./vite": {
-      "types": "./src/vite.js",
-      "default": "./src/vite.js"
+      "types": "./dist/vite.d.ts",
+      "default": "./dist/vite.js"
     },
     "./vite-preset": {
-      "types": "./src/vite-preset.ts",
-      "default": "./src/vite-preset.ts"
+      "types": "./dist/vite-preset.d.ts",
+      "default": "./dist/vite-preset.js"
     },
     "./assets/*": "./src/assets/*",
     "./classes/*": "./src/classes/*",
@@ -43,10 +44,12 @@
     "./util/*": "./src/util/*"
   },
   "files": [
-    "src"
+    "src",
+    "dist"
   ],
   "scripts": {
-    "prepublishOnly": "echo 'Ready to publish source files'"
+    "build:vite": "tsc --project tsconfig.vite.json",
+    "prepublishOnly": "npm run build:vite"
   },
   "author": "contact@zachwinter.com",
   "license": "MIT",
@@ -55,7 +58,6 @@
     "pinia": "3.0.3",
     "sass": "1.89.1",
     "typescript": "5.8.3",
-    "vite": "6.3.5",
     "vue": "3.5.17"
   },
   "dependencies": {
@@ -111,6 +113,7 @@
     "unplugin-vue-router": "0.12.0",
     "uuid": "11.1.0",
     "viem": "^2.31.4",
+    "vite": "6.3.5",
     "vite-svg-loader": "5.1.0",
     "vite-tsconfig-paths": "5.1.4",
     "vue-markdown-render": "2.2.1",

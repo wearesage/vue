@@ -1,5 +1,5 @@
 export * from "./useArrowControlledRefHistory";
-// export * from "./useStudies";
+export * from "./useStudy";
 export * from "./useDropMultipleFiles";
 export * from "./useRandomGreeting";
 export * from "./useReactiveValue";

@@ -1,5 +1,5 @@
 import { defineConfig, type UserConfig } from "vite";
-import { createSageConfig, type SageViteConfig } from "./vite.ts";
+import { createSageConfig, type SageViteConfig } from "./vite";
 
 /**
  * One-liner Vite config for @wearesage/vue projects
