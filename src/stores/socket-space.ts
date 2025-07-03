@@ -3,7 +3,7 @@ import { ref, computed, readonly, onBeforeUnmount } from "vue";
 import { useSocketCore } from "./socket-core";
 import { useToast } from "./toast";
 import { api } from "../api/client";
-import { EventEmitter } from "events";
+import { EventEmitter } from "eventemitter3";
 import { 
   SocketEvents, 
   SocketEventCategories,
