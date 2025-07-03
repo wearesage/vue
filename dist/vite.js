@@ -69,7 +69,7 @@ export async function createSageConfig(userConfig = {}) {
     // Handle API proxy
     const serverConfig = {
         host: true,
-        port: 3000,
+        port: 5173,
     };
     if (userConfig.apiProxy) {
         const { target = "http://localhost:2223", path = "/api" } = userConfig.apiProxy;

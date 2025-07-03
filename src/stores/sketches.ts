@@ -10,7 +10,7 @@ type SelectionMethod = "pointer" | "keyboard" | "internal";
 export const useSketches = defineStore("sketches", () => {
   const raf = useRAF();
   const sketch = shallowRef<Sketch | null>(null);
-  const activeSketchId = computed(() => sketch.value?._id || null);
+  const activeSketchId = computed(() => sketch.value?.id || null);
   // No longer need activeStudyId - we're loading ShaderTom's sketches directly
   const activeStudyId = ref("shader-tom-collection"); // Just for compatibility
   const { iterations, index, loading, error } = useStudy(activeStudyId, activeSketchId);
@@ -52,8 +52,24 @@ export const useSketches = defineStore("sketches", () => {
     }
   );
 
+  // Watch iterations and auto-select a random sketch when sketches are loaded
+  watch(
+    () => iterations.value,
+    (newIterations) => {
+      if (newIterations.length > 0 && !sketch.value) {
+        console.log(`🎲 Auto-selecting random sketch from ${newIterations.length} loaded sketches`);
+        sampleSketches();
+      }
+    },
+    {
+      immediate: true,
+    }
+  );
+
   function selectSketch(value: Sketch, method: SelectionMethod = "pointer", internal: any = null) {
-    const currentId = sketch.value?._id;
+    if (!value) return;
+
+    const currentId = sketch.value?.id;
 
     raf.remove("variant");
 
@@ -62,7 +78,7 @@ export const useSketches = defineStore("sketches", () => {
     sketch.value = clone(value);
     shader.value = value.shader;
 
-    if (currentId !== value._id && internal === null) {
+    if (currentId !== value.id && internal === null) {
       variant.value = 0;
       keyboardIndex.value = 0;
     } else {
@@ -171,12 +187,12 @@ export const useSketches = defineStore("sketches", () => {
    * Reset sketches store state (called on logout)
    */
   function reset() {
-    console.log('🎨 Resetting sketches store state');
-    
+    console.log("🎨 Resetting sketches store state");
+
     // Stop all intervals
     clearInterval(variantShuffleInterval.value);
     clearInterval(magicInterval.value);
-    
+
     // Reset interval refs
     variantShuffleInterval.value = null;
     magicInterval.value = null;
@@ -215,7 +231,7 @@ export const useSketches = defineStore("sketches", () => {
     selectSketch,
     iterations,
     loading, // Loading state for ShaderTom sketches
-    error,   // Error state for ShaderTom sketches
+    error, // Error state for ShaderTom sketches
     shaderError,
     magicTween,
     tweenTo,

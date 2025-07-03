@@ -93,6 +93,37 @@ onClickOutside(element, () => {
   @include position(fixed, 0 null null 0, 100);
   border-radius: 1rem;
   transform-origin: center center;
+  background: var(--black);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(16px);
+  padding: 1rem;
+  
+  // Dark mode styles
+  color: var(--white);
+  font-family: "Space Mono", monospace;
+  
+  // Ensure child components also respect dark mode and use monospace font
+  :deep(.text-input),
+  :deep(.range-input),
+  :deep(.toggle) {
+    background: var(--black);
+    color: var(--white);
+    border-color: var(--border);
+    font-family: "Space Mono", monospace;
+  }
+  
+  :deep(input) {
+    background: var(--black);
+    color: var(--white);
+    border-color: var(--border);
+    font-family: "Space Mono", monospace;
+  }
+  
+  :deep(label) {
+    color: var(--white);
+    font-family: "Space Mono", monospace;
+  }
 }
 
 .text {

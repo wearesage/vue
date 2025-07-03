@@ -3,7 +3,7 @@ export type Uniform = { value: UniformValue };
 export type Variant = Record<string, Uniform>;
 
 export type Sketch = {
-  _id: string;
+  id: string;
   shader: string;
   variants: Variant[];
 };

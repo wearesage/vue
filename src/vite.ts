@@ -105,7 +105,7 @@ export async function createSageConfig(userConfig: SageViteConfig = {}): Promise
   // Handle API proxy
   const serverConfig: any = {
     host: true,
-    port: 3000,
+    port: 5173,
   };
   
   if (userConfig.apiProxy) {
