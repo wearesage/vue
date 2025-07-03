@@ -14,13 +14,13 @@ export function defineSageConfig(userConfig: SageViteConfig = {}): Promise<UserC
  */
 export function defineSageConfigSync(userConfig: SageViteConfig = {}): UserConfig {
   const { plugins, css, optimizeDeps, resolve } = userConfig;
-  
+
   return defineConfig({
     plugins: plugins || [],
     css: css || {
       preprocessorOptions: {
         scss: {
-          silenceDeprecations: ['mixed-decls', 'legacy-js-api', 'color-functions', 'global-builtin', 'import'],
+          silenceDeprecations: ["mixed-decls", "legacy-js-api", "color-functions", "global-builtin", "import"],
           quietDeps: true,
           additionalData: `
             @use "sass:math";
@@ -34,12 +34,12 @@ export function defineSageConfigSync(userConfig: SageViteConfig = {}): UserConfi
     },
     resolve: resolve || {
       alias: {
-        '@wearesage/sass': '@wearesage/sass'
-      }
+        "@wearesage/sass": "@wearesage/sass",
+      },
     },
     server: {
       host: true,
-      port: 3000,
+      port: 5173,
     },
     build: {
       target: "es2022",

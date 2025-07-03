@@ -66,7 +66,7 @@ export * from "./auth/useAdmin";
 // Utilities & Helpers
 export * from "./utilities/useArrowControlledRefHistory";
 export * from "./utilities/useDropMultipleFiles";
-export * from "./utilities/useStudies";
+export * from "./utilities/useStudy";
 export * from "./utilities/useRandomGreeting";
 export * from "./utilities/useReactiveValue";
 export * from "./utilities/useThrottledConsole";
