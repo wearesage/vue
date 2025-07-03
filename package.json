@@ -1,6 +1,6 @@
 {
   "name": "@wearesage/vue",
-  "version": "2.2.1",
+  "version": "2.2.3",
   "main": "./src/client.ts",
   "types": "./src/client.ts",
   "exports": {
@@ -11,6 +11,10 @@
     "./vite": {
       "types": "./src/vite.ts",
       "default": "./src/vite.ts"
+    },
+    "./vite-preset": {
+      "types": "./src/vite-preset.ts",
+      "default": "./src/vite-preset.ts"
     },
     "./assets/*": "./src/assets/*",
     "./classes/*": "./src/classes/*",
