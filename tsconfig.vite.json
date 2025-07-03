@@ -13,6 +13,7 @@
   },
   "include": [
     "src/vite.ts",
-    "src/vite-preset.ts"
+    "src/vite-preset.ts",
+    "src/router/vite-plugin-sage-router.ts"
   ]
 }
