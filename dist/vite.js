@@ -31,29 +31,15 @@ export function createSagePlugins(config = {}) {
         ] : []),
     ]);
 }
+// Router functionality removed to avoid build complexity
+// If you need router, import sageRouter directly from the source file
 export async function getPluginsWithSageRouter() {
-    const { sageRouter } = await import("./router/vite-plugin-sage-router");
-    return [
-        sageRouter({
-            pagesDir: "src/pages",
-            outputFile: "src/routes.generated.ts",
-        }),
-        ...plugins,
-    ];
+    throw new Error("Router functionality has been removed from vite utilities. Import sageRouter directly if needed.");
 }
 export async function createSagePluginsWithRouter(config = {}) {
-    const { sageRouter } = await import("./router/vite-plugin-sage-router");
-    const basePlugins = await createSagePlugins(config);
-    const routerConfig = typeof config.router === 'object' ? config.router : {};
-    const pagesDir = routerConfig.pagesDir || "src/pages";
-    const routesOutput = routerConfig.routesOutput || "src/routes.generated.ts";
-    return [
-        sageRouter({
-            pagesDir,
-            outputFile: routesOutput,
-        }),
-        ...basePlugins,
-    ];
+    // For now, just return the base plugins without router
+    console.warn("Router functionality temporarily disabled. Using base plugins only.");
+    return createSagePlugins(config);
 }
 export const resolve = {
     alias: {
