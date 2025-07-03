@@ -56,7 +56,7 @@ export const useSketches = defineStore("sketches", () => {
   watch(
     () => iterations.value,
     (newIterations) => {
-      if (newIterations.length > 0 && !sketch.value) {
+      if (newIterations.length > 0 && !sketch?.value) {
         console.log(`🎲 Auto-selecting random sketch from ${newIterations.length} loaded sketches`);
         sampleSketches();
       }

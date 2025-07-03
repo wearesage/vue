@@ -53,7 +53,7 @@ export function useStudy(activeStudy: Ref<string>, activeSketchId: Ref<string | 
 
   const index = computed<number>(() => {
     if (activeSketchId.value === null) return -1;
-    const sketch = iterations.value.find((v: Sketch) => v.id === activeSketchId.value);
+    const sketch = iterations.value.find((v: Sketch) => v._id === activeSketchId.value);
     if (!sketch) return -1;
     return iterations.value.indexOf(sketch);
   });
