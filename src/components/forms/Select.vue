@@ -42,8 +42,6 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 select {
-  @include form-input;
-  padding-right: 2rem;
   cursor: pointer;
   appearance: none;
 }

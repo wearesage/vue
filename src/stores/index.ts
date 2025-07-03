@@ -8,6 +8,8 @@ export * from "./raf";
 export * from "./sketches";
 export * from "./socket";
 export * from "./socket-core";
+export * from "./socket-space"; // 🚀 NEW: Unified space event handling
+// TODO: Remove these old competing stores once migration is complete - temporarily restored to prevent white screen
 export * from "./socket-messaging";
 export * from "./socket-project";
 export * from "./toast";
@@ -16,3 +18,4 @@ export * from "./user-follows";
 export * from "./viewport";
 export * from "./sources";
 export * from "./spotify";
+export * from "./session-logger";

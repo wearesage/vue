@@ -9,6 +9,20 @@ import { useUI } from "./ui";
 import { VITE_DEFAULT_AUTHENTICATED_VIEW, VITE_ADMIN_WALLET } from "../constants/env";
 import { UserRole } from "@wearesage/shared";
 
+// Session logging integration
+let sessionLogger: any = null;
+const loadSessionLogger = async () => {
+  if (!sessionLogger) {
+    try {
+      const { useSessionLogger } = await import('./session-logger');
+      sessionLogger = useSessionLogger();
+    } catch (error) {
+      console.warn('Session logger not available:', error);
+    }
+  }
+  return sessionLogger;
+};
+
 export const useAuth = defineStore("auth", () => {
   const router = useRouter();
   const route = useRoute();
@@ -273,6 +287,15 @@ export const useAuth = defineStore("auth", () => {
       userIntentToSignIn.value = true;
       console.log("🟢 User intent flag set to TRUE - explicit signIn called");
       isAuthenticating.value = true;
+      
+      // Log authentication attempt
+      const logger = await loadSessionLogger();
+      if (logger) {
+        logger.logEvent(logger.SessionEventType.AUTH_LOGIN_ATTEMPT, {
+          method: 'wallet',
+          timestamp: Date.now()
+        });
+      }
 
       // Check wallet connection status and handle accordingly
       if (!wallet.isConnected) {
@@ -349,11 +372,22 @@ export const useAuth = defineStore("auth", () => {
         };
 
         // Handle auth success
-        const handleSuccess = ({ user: userData, accessToken, refreshToken: newRefreshToken }: any) => {
+        const handleSuccess = async ({ user: userData, accessToken, refreshToken: newRefreshToken }: any) => {
           authToken.value = accessToken;
           refreshToken.value = newRefreshToken;
           user.value = userData;
           toast.message(`Welcome ${userData.walletAddress.slice(0, 8)}!`);
+          
+          // Log successful authentication
+          const logger = await loadSessionLogger();
+          if (logger) {
+            logger.logEvent(logger.SessionEventType.AUTH_LOGIN_SUCCESS, {
+              method: 'wallet',
+              walletAddress: userData.walletAddress,
+              userRole: userData.role,
+              timestamp: Date.now()
+            });
+          }
           
           // 🚀 Extension Auth Handoff - Send auth data to Chrome extension if installed
           try {
@@ -382,8 +416,19 @@ export const useAuth = defineStore("auth", () => {
         };
 
         // Handle auth error
-        const handleError = ({ message }: { message: string }) => {
+        const handleError = async ({ message }: { message: string }) => {
           toast.error(`Authentication failed: ${message}`);
+          
+          // Log authentication failure
+          const logger = await loadSessionLogger();
+          if (logger) {
+            logger.logEvent(logger.SessionEventType.AUTH_LOGIN_FAILURE, {
+              method: 'wallet',
+              error: message,
+              timestamp: Date.now()
+            });
+          }
+          
           cleanup();
           reject(new Error(message));
         };
@@ -420,6 +465,15 @@ export const useAuth = defineStore("auth", () => {
 
   async function signOut() {
     try {
+      // Log logout event
+      const logger = await loadSessionLogger();
+      if (logger) {
+        logger.logEvent(logger.SessionEventType.AUTH_LOGOUT, {
+          walletAddress: walletAddress.value,
+          timestamp: Date.now()
+        });
+      }
+      
       // Socket-first logout
       const socketCore = useSocketCore();
       socketCore.emit("auth:logout");

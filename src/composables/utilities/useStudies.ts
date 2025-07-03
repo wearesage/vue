@@ -35,6 +35,7 @@ export function useStudies(activeStudy: Ref<string>, activeSketchId: Ref<string 
     return iterations.value.indexOf(sketch);
   });
 
+  console.log(iterations.value);
   return {
     iterations,
     index,

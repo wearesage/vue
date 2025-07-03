@@ -3,7 +3,6 @@ import { ref, computed, watch, onBeforeUnmount } from "vue";
 import { useRoute } from "../router/sage-router";
 import { useSocketCore } from "./socket-core";
 import { useAuth } from "./auth";
-import { useSocketProject } from "./socket-project";
 import { useSources } from "./sources";
 import { useQueue } from "./queue";
 import { useSpotify } from "./spotify";
@@ -16,6 +15,10 @@ import {
   UserPreferences,
   DEFAULT_USER_PREFERENCES,
 } from "@wearesage/shared";
+
+// Session logging integration
+import { useSessionLogging } from "../composables/useSessionLogging";
+const { logEvent } = useSessionLogging();
 
 // Re-export queue types for backward compatibility
 export type { QueueTrack } from "./queue";
@@ -329,11 +332,20 @@ export const useUserState = defineStore("userState", () => {
 
   watch(
     () => route.value.name,
-    (newRouteName) => {
+    async (newRouteName) => {
       const newPage = mapRouteToPage(newRouteName as string);
       if (newPage !== currentPage.value) {
+        const oldPage = currentPage.value;
         currentPage.value = newPage;
         broadcastUserState();
+        
+        // Log page view event
+        logEvent('PAGE_VIEW' as any, {
+          fromPage: oldPage,
+          toPage: newPage,
+          route: newRouteName as string,
+          fullPath: route.value.fullPath
+        });
       }
     },
     { immediate: true }

@@ -6,6 +6,21 @@ import { useAudioAnalyser } from "../composables/audio/useAudioAnalyser";
 import { useRAF } from "./raf";
 import { useToast } from "./toast";
 import { AudioSource } from "@wearesage/shared";
+import { api } from "../api/client";
+
+// Session logging integration
+let sessionLogger: any = null;
+const loadSessionLogger = async () => {
+  if (!sessionLogger) {
+    try {
+      const { useSessionLogger } = await import('./session-logger');
+      sessionLogger = useSessionLogger();
+    } catch (error) {
+      console.warn('Session logger not available:', error);
+    }
+  }
+  return sessionLogger;
+};
 
 export const useAudio = defineStore("audio", () => {
   // Audio element and source (managed by AudioSystemManager)
@@ -61,14 +76,34 @@ export const useAudio = defineStore("audio", () => {
     const success = await audioSystem.playAudio();
     if (success) {
       console.log('🔊 Audio playing via AudioSystemManager');
+      
+      // Log audio resume event
+      const logger = await loadSessionLogger();
+      if (logger && currentTrackId.value) {
+        logger.logEvent(logger.SessionEventType.AUDIO_RESUME, {
+          trackId: currentTrackId.value,
+          currentTime: currentTime.value,
+          timestamp: Date.now()
+        });
+      }
     } else {
       console.warn('🔊 AudioSystemManager playAudio() returned false');
     }
     return success;
   };
 
-  const pause = () => {
+  const pause = async () => {
     audioSystem.pauseAudio();
+    
+    // Log audio pause event
+    const logger = await loadSessionLogger();
+    if (logger && currentTrackId.value) {
+      logger.logEvent(logger.SessionEventType.AUDIO_PAUSE, {
+        trackId: currentTrackId.value,
+        currentTime: currentTime.value,
+        timestamp: Date.now()
+      });
+    }
   };
 
   // Audio analysis using the SAUCE (useAudioAnalyser + AudioSystemManager)
@@ -319,6 +354,20 @@ export const useAudio = defineStore("audio", () => {
 
     // Update current track ID for duplicate prevention
     currentTrackId.value = track.sourceId;
+    
+    // Log track start event
+    const logger = await loadSessionLogger();
+    if (logger) {
+      logger.logEvent(logger.SessionEventType.AUDIO_TRACK_START, {
+        trackId: track.sourceId,
+        title: track.title,
+        artist: track.artist,
+        album: track.album,
+        source: track.source,
+        duration: track.duration,
+        timestamp: Date.now()
+      });
+    }
 
     // Handle Audius stream URL fetching
     if (audioUrl.startsWith("audius-stream:")) {
@@ -327,32 +376,9 @@ export const useAudio = defineStore("audio", () => {
       try {
         console.log("🔊 Fetching Audius stream URL for track ID:", trackId);
 
-        // Call our API to get the stream URL
-        const response = await fetch(`/api/audius/stream/${trackId}`);
-
-        if (!response.ok) {
-          console.error("🔊 API response not OK:", response.status, response.statusText);
-          const errorText = await response.text();
-          console.error("🔊 Error response body:", errorText);
-
-          // Check if we got HTML instead of JSON (API server not running)
-          if (errorText.includes("<!doctype html>")) {
-            throw new Error("Backend API server not available - got HTML instead of JSON");
-          }
-
-          throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-        }
-
-        const responseText = await response.text();
-        console.log("🔊 Raw API response:", responseText);
-
-        // Check if response is HTML (indicates API routing issue)
-        if (responseText.trim().startsWith("<!doctype html>") || responseText.includes("<html")) {
-          throw new Error("Got HTML response instead of JSON - check API proxy configuration");
-        }
-
-        const responseData = JSON.parse(responseText);
-        const { url: streamUrl } = responseData;
+        // Call our API to get the stream URL using authenticated client
+        const response = await api.get(`/api/audius/stream/${trackId}`);
+        const { url: streamUrl } = response.data;
 
         if (streamUrl) {
           console.log("🔊 Got Audius stream URL:", streamUrl);

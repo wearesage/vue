@@ -10,6 +10,7 @@
       :min="min"
       :max="max"
       :step="step"
+      @blur="$emit('blur')"
       @input="onInput"
       @keypress="$emit('keypress', $event)"
       @keydown="$emit('keydown', $event)" />
@@ -26,6 +27,7 @@ const emit = defineEmits<{
   "update:model-value": [value: string | number];
   keypress: [event: KeyboardEvent];
   keydown: [event: KeyboardEvent];
+  blur: [event: any];
 }>();
 
 const props = withDefaults(
@@ -53,45 +55,25 @@ const input = ref<HTMLInputElement>();
 
 function onInput(e: Event) {
   const target = e.target as HTMLInputElement;
-  const value = props.type === "number" ? Number(target.value) : target.value;
-  emit("update:model-value", value);
-
-  if (props.autoWidth) {
-    updateWidth();
-  }
-}
-
-async function updateWidth() {
-  if (!input.value || !props.autoWidth) return;
-  await nextTick();
-  input.value.style.maxWidth = `${props.modelValue.length * 25}px`;
+  emit("update:model-value", target.value);
 }
 
 onMounted(() => {
   if (props.autofocus) {
     input.value?.focus();
   }
-
-  if (props.autoWidth) {
-    updateWidth();
-  }
 });
-
-// Watch for modelValue changes to update width
-watch(
-  () => props.modelValue,
-  () => {
-    if (props.autoWidth) {
-      updateWidth();
-    }
-  },
-  { immediate: true }
-);
 </script>
 
 <style lang="scss" scoped>
+.form-element,
+:deep(textarea) {
+  border-radius: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
 textarea {
-  // Width is handled by JavaScript when autoWidth is true
-  transition: width 0.1s $transition-easing;
+  @include box;
+  min-width: 300px;
 }
 </style>

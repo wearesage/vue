@@ -71,3 +71,7 @@ export * from "./utilities/useRandomGreeting";
 export * from "./utilities/useReactiveValue";
 export * from "./utilities/useThrottledConsole";
 export * from "./utilities/useTypedText";
+
+// Session & Performance Monitoring
+export * from "./useSessionLogging";
+export * from "./usePerformanceMonitoring";

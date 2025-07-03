@@ -19,10 +19,15 @@ export const appInitializationPlugin: PiniaPlugin = ({ store, pinia }) => {
         // Import stores dynamically to avoid circular dependencies
         const { useSocketCore } = await import('../stores/socket-core');
         const { useAuth } = await import('../stores/auth');
+        const { useSessionLogger } = await import('../stores/session-logger');
+        const { useSocketSpace } = await import('../stores/socket-space');
+        const { initGlobalPerformanceTracking } = await import('../composables/usePerformanceMonitoring');
         
         // Initialize core services
         const socketCore = useSocketCore(pinia);
         const auth = useAuth(pinia);
+        const sessionLogger = useSessionLogger(pinia);
+        const socketSpace = useSocketSpace(pinia);
         
         // Initialize auth first (validates stored tokens)
         await auth.initialize();
@@ -35,6 +40,22 @@ export const appInitializationPlugin: PiniaPlugin = ({ store, pinia }) => {
         // Start heartbeat to keep connection alive
         socketCore.startHeartbeat();
         console.log('💓 Socket heartbeat started');
+        
+        // Setup unified space listeners and auto-join if authenticated
+        socketSpace.setupSpaceListeners();
+        console.log('🚀 Unified space listeners setup');
+        
+        if (auth.isAuthenticated) {
+          await socketSpace.autoJoinUserProjects();
+          console.log('🎯 Auto-joined user projects as spaces with unified toast notifications');
+        }
+        
+        // Initialize session logging (happens automatically on store creation)
+        console.log('📊 Session logging initialized');
+        
+        // Initialize global performance tracking
+        initGlobalPerformanceTracking();
+        console.log('⚡ Performance tracking initialized');
         
       } catch (error) {
         console.error('❌ App initialization failed:', error);

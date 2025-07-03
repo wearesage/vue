@@ -10,6 +10,20 @@ import { clamp, easeInOut } from "../util";
 import { MediaSessionManager } from "../classes/MediaSessionManager";
 import { useRadioStream } from "../composables/useRadioStream";
 
+// Session logging integration
+let sessionLogger: any = null;
+const loadSessionLogger = async () => {
+  if (!sessionLogger) {
+    try {
+      const { useSessionLogger } = await import('./session-logger');
+      sessionLogger = useSessionLogger();
+    } catch (error) {
+      console.warn('Session logger not available:', error);
+    }
+  }
+  return sessionLogger;
+};
+
 export const AudioSourceIcons: Record<AudioSource, string> = {
   [AudioSource.SPOTIFY]: "spotify",
   [AudioSource.AUDIUS]: "audius",
@@ -279,6 +293,18 @@ export const useSources = defineStore("sources", () => {
       if (oldSource !== newSource) {
         console.log(`🔄 Switching from ${getAudioSourceLabel(oldSource)} to ${getAudioSourceLabel(newSource)}`);
         await performSourceCleanup(oldSource);
+        
+        // Log audio source change
+        const logger = await loadSessionLogger();
+        if (logger) {
+          logger.logEvent(logger.SessionEventType.AUDIO_SOURCE_CHANGE, {
+            fromSource: oldSource,
+            toSource: newSource,
+            fromSourceLabel: getAudioSourceLabel(oldSource),
+            toSourceLabel: getAudioSourceLabel(newSource),
+            timestamp: Date.now()
+          });
+        }
       }
 
       // Activate media session for the new source BEFORE setting source value

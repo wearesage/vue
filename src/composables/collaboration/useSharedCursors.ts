@@ -1,5 +1,5 @@
 import { ref, computed, watch, onMounted, onUnmounted, Ref, readonly } from "vue";
-import { useSocketCore, useSocketProject, useViewport } from "../../stores";
+import { useSocketCore, useSocketSpace, useViewport } from "../../stores";
 
 export interface SharedCursor {
   walletAddress: string;
@@ -16,7 +16,7 @@ export interface SharedParticipant {
 
 export function useSharedCursors(spaceId: Ref<string> | string) {
   const socketCore = useSocketCore();
-  const socketProject = useSocketProject();
+  const socketSpace = useSocketSpace();
   const viewport = useViewport();
 
   // Normalize spaceId to ref
@@ -33,8 +33,8 @@ export function useSharedCursors(spaceId: Ref<string> | string) {
   const scrollY = computed(() => viewport.scrollPosition.y);
 
   // Cursor data for this space
-  const cursors = computed(() => socketProject.getProjectCursors(normalizedSpaceId.value));
-  const participants = computed(() => socketProject.getProjectParticipants(normalizedSpaceId.value));
+  const cursors = computed(() => socketSpace.getSpaceCursors(normalizedSpaceId.value));
+  const participants = computed(() => socketSpace.getSpaceParticipants(normalizedSpaceId.value));
 
   // Throttled cursor sending
   let lastCursorSend = 0;
@@ -49,7 +49,8 @@ export function useSharedCursors(spaceId: Ref<string> | string) {
     const x = mouseX.value + scrollX.value;
     const y = mouseY.value + scrollY.value;
 
-    socketProject.sendCursorMove(normalizedSpaceId.value, x, y);
+    // Send cursor update through unified socket space
+    socketSpace.sendCursorMove(normalizedSpaceId.value, x, y);
     lastCursorSend = now;
   };
 
@@ -63,13 +64,13 @@ export function useSharedCursors(spaceId: Ref<string> | string) {
         await socketCore.connect();
       }
 
-      // Setup project listeners if not already done
+      // Setup space listeners if not already done
       if (socketCore.connected) {
-        socketProject.setupProjectListeners();
-        socketProject.startCleanup();
+        socketSpace.setupSpaceListeners();
+        socketSpace.startCleanup();
 
         // Join the space
-        await socketProject.joinProject(normalizedSpaceId.value);
+        await socketSpace.joinSpace(normalizedSpaceId.value);
 
         initialized.value = true;
         console.log(`🎯 Shared cursors initialized for space: ${normalizedSpaceId.value}`);
@@ -84,8 +85,8 @@ export function useSharedCursors(spaceId: Ref<string> | string) {
     if (!initialized.value) return;
 
     try {
-      await socketProject.leaveProject(normalizedSpaceId.value);
-      socketProject.stopCleanup();
+      await socketSpace.leaveSpace(normalizedSpaceId.value);
+      socketSpace.stopCleanup();
       initialized.value = false;
       console.log(`👋 Shared cursors cleanup for space: ${normalizedSpaceId.value}`);
     } catch (error) {
@@ -116,11 +117,11 @@ export function useSharedCursors(spaceId: Ref<string> | string) {
   // Watch for space ID changes
   watch(normalizedSpaceId, async (newSpaceId, oldSpaceId) => {
     if (oldSpaceId && initialized.value) {
-      await socketProject.leaveProject(oldSpaceId);
+      await socketSpace.leaveSpace(oldSpaceId);
     }
 
     if (newSpaceId && socketCore.connected) {
-      await socketProject.joinProject(newSpaceId);
+      await socketSpace.joinSpace(newSpaceId);
     }
   });
 
