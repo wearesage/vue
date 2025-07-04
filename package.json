@@ -1,6 +1,6 @@
 {
   "name": "@wearesage/vue",
-  "version": "3.1.2",
+  "version": "3.1.3",
   "type": "module",
   "main": "./src/client.ts",
   "types": "./src/client.ts",

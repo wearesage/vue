@@ -476,7 +476,7 @@ export const useSessionLogger = defineStore("sessionLogger", () => {
         
         if (allEvents.length > 0) {
           const data = JSON.stringify({ events: allEvents });
-          navigator.sendBeacon('/api/session/log', data);
+          navigator.sendBeacon('/api/log', data);
         }
       }
     });

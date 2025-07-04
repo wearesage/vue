@@ -71,7 +71,7 @@ export const spotifyApi = {
 
   async initializeAuth(returnUrl?: string): Promise<SpotifyAuthResponse> {
     const params = returnUrl ? { returnUrl } : {};
-    const response = await api.post<SpotifyAuthResponse>("/api/spotify/auth", {}, { params });
+    const response = await api.post<SpotifyAuthResponse>("/api/spotify/auth/init", {}, { params });
     return response.data;
   },
 

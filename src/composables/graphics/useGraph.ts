@@ -120,7 +120,7 @@ export function useGraph(canvas: Ref<HTMLCanvasElement | null>) {
   // simulation, draggedNode, and isDragging are now defined above
 
   async function getData(): Promise<void> {
-    const data = await fetch("http://localhost:3000/api/neo4j/graph").then((res) => res.json());
+    const data = await fetch("/api/neo4j/graph").then((res) => res.json());
     nodes.value = data.nodes;
     edges.value = data.edges;
   }

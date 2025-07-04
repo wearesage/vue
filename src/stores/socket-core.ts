@@ -151,11 +151,14 @@ export const useSocketCore = defineStore("socket-core", () => {
 
   const cleanupOnPageUnload = () => {
     if (socket.value?.connected) {
-      // Emit offline signal before disconnect
-      const rawSocket = toRaw(socket.value);
-      rawSocket.emit("user-state:offline");
+      // Use sendBeacon for reliable offline signal during page unload
+      if (navigator.sendBeacon) {
+        const data = JSON.stringify({ action: 'user-offline', timestamp: Date.now() });
+        navigator.sendBeacon('/api/user-offline', data);
+      }
       
       // Force immediate disconnect
+      const rawSocket = toRaw(socket.value);
       rawSocket.disconnect();
       console.log("🧹 Socket disconnected on page unload");
     }
