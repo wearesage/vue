@@ -3,7 +3,7 @@ import { ref, computed, readonly, onBeforeUnmount } from "vue";
 import { useSocketCore } from "./socket-core";
 import { useToast } from "./toast";
 import { api } from "../api/client";
-import { EventEmitter } from "events";
+import { EventEmitter } from "eventemitter3";
 import { SocketEvents, ProjectSocketEvent, TaskSocketEvent, BucketSocketEvent } from "@wearesage/shared";
 
 interface ProjectCursor {
@@ -69,17 +69,17 @@ export const useSocketProject = defineStore("socket-project", () => {
   // Setup event listeners
   const setupProjectListeners = () => {
     console.log("🔍 SOCKET-PROJECT: setupProjectListeners called");
-    
+
     if (projectListenersSetup) {
       console.log("🔍 SOCKET-PROJECT: Listeners already set up, skipping...");
       return;
     }
-    
+
     if (!socketCore.socket) {
       console.warn("🚫 Cannot setup project listeners - socket not connected");
       return;
     }
-    
+
     console.log("🔍 SOCKET-PROJECT: Socket exists, setting up listeners...");
     projectListenersSetup = true;
 
@@ -261,7 +261,7 @@ export const useSocketProject = defineStore("socket-project", () => {
     });
 
     console.log("📡 Project space listeners setup complete");
-    
+
     // Setup toast notifications after socket listeners are ready
     setupToastNotifications();
   };
@@ -407,38 +407,39 @@ export const useSocketProject = defineStore("socket-project", () => {
 
     try {
       console.log("🎯 Auto-joining user projects...");
-      
+
       // Get all user projects from API
-      const response = await api.get('/api/projects');
-      console.log('🔍 API response:', response.data);
-      
+      const response = await api.get("/api/projects");
+      console.log("🔍 API response:", response.data);
+
       // Handle the actual API response structure: {projects: {owned: [], collaborated: []}}
       const projectsData = response.data?.projects;
       if (!projectsData) {
-        console.warn('⚠️ No projects data in response');
+        console.warn("⚠️ No projects data in response");
         return;
       }
-      
+
       // Combine owned and collaborated projects
       const ownedProjects = Array.isArray(projectsData.owned) ? projectsData.owned : [];
       const collaboratedProjects = Array.isArray(projectsData.collaborated) ? projectsData.collaborated : [];
       const userProjects = [...ownedProjects, ...collaboratedProjects];
-      
-      console.log(`📋 Found ${ownedProjects.length} owned + ${collaboratedProjects.length} collaborated = ${userProjects.length} total projects`);
-      
+
+      console.log(
+        `📋 Found ${ownedProjects.length} owned + ${collaboratedProjects.length} collaborated = ${userProjects.length} total projects`
+      );
+
       // Toast notifications will be set up after socket listeners are ready
-      
+
       // Join each project
       for (const project of userProjects) {
         await joinProject(project.id);
         console.log(`✅ Auto-joined project: ${project.name} (${project.id})`);
-        
+
         // Small delay to prevent overwhelming the server
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
-      
+
       console.log(`🎉 Successfully auto-joined ${userProjects.length} projects with toast notifications enabled`);
-      
     } catch (error) {
       console.error("❌ Failed to auto-join user projects:", error);
       toast.error("Failed to connect to project updates");
@@ -484,13 +485,13 @@ export const useSocketProject = defineStore("socket-project", () => {
       console.log("🍞 Toast notifications already set up, skipping...");
       return;
     }
-    
+
     console.log("🍞 Setting up toast notifications for project events...");
     toastNotificationsSetup = true;
 
     // Helper function to get short wallet address
     const getShortWallet = (walletAddress: string) => {
-      return walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : 'Unknown';
+      return walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : "Unknown";
     };
 
     // Project events
@@ -499,7 +500,7 @@ export const useSocketProject = defineStore("socket-project", () => {
     });
 
     eventEmitter.on("project-updated", (event: ProjectSocketEvent) => {
-      const updates = event.payload.changes ? Object.keys(event.payload.changes).join(', ') : 'unknown';
+      const updates = event.payload.changes ? Object.keys(event.payload.changes).join(", ") : "unknown";
       toast.message(`📝 ${getShortWallet(event.walletAddress)} updated project "${event.payload.data?.name}" (${updates})`);
     });
 
@@ -509,11 +510,11 @@ export const useSocketProject = defineStore("socket-project", () => {
 
     // Bucket events
     eventEmitter.on("bucket-created", (event: BucketSocketEvent) => {
-      console.log('🍞 TOAST: Bucket created event triggered!', event);
+      console.log("🍞 TOAST: Bucket created event triggered!", event);
       const message = `📦 ${getShortWallet(event.walletAddress)} created bucket "${event.payload.data?.name}"`;
-      console.log('🍞 TOAST: Calling toast.message with:', message);
+      console.log("🍞 TOAST: Calling toast.message with:", message);
       toast.message(message);
-      console.log('🍞 TOAST: toast.message called!');
+      console.log("🍞 TOAST: toast.message called!");
     });
 
     eventEmitter.on("bucket-updated", (event: BucketSocketEvent) => {
@@ -526,15 +527,15 @@ export const useSocketProject = defineStore("socket-project", () => {
 
     // Task events - the most important ones!
     eventEmitter.on("task-created", (event: TaskSocketEvent) => {
-      console.log('🍞 TOAST: Task created event triggered!', event);
+      console.log("🍞 TOAST: Task created event triggered!", event);
       const message = `🎯 ${getShortWallet(event.walletAddress)} created task "${event.payload.data?.title}"`;
-      console.log('🍞 TOAST: Calling toast.message with:', message);
+      console.log("🍞 TOAST: Calling toast.message with:", message);
       toast.message(message);
-      console.log('🍞 TOAST: toast.message called!');
+      console.log("🍞 TOAST: toast.message called!");
     });
 
     eventEmitter.on("task-updated", (event: TaskSocketEvent) => {
-      const updates = event.payload.changes ? Object.keys(event.payload.changes).join(', ') : 'unknown';
+      const updates = event.payload.changes ? Object.keys(event.payload.changes).join(", ") : "unknown";
       toast.message(`📝 ${getShortWallet(event.walletAddress)} updated "${event.payload.data?.title}" (${updates})`);
     });
 
@@ -543,11 +544,11 @@ export const useSocketProject = defineStore("socket-project", () => {
     });
 
     eventEmitter.on("task-deleted", (event: TaskSocketEvent) => {
-      console.log('🍞 TOAST: Task deleted event triggered!', event);
+      console.log("🍞 TOAST: Task deleted event triggered!", event);
       const message = `🗑️ ${getShortWallet(event.walletAddress)} deleted a task`;
-      console.log('🍞 TOAST: Calling toast.message with:', message);
+      console.log("🍞 TOAST: Calling toast.message with:", message);
       toast.message(message);
-      console.log('🍞 TOAST: toast.message called!');
+      console.log("🍞 TOAST: toast.message called!");
     });
 
     console.log("🍞 Toast notifications enabled for all project events!");
@@ -578,30 +579,30 @@ export const useSocketProject = defineStore("socket-project", () => {
     socketCore.off("project-space:cursor-move");
     socketCore.off("project-space:drag-start");
     socketCore.off("project-space:drag-end");
-    
+
     // Project CRUD events (space: namespace)
     socketCore.off(SocketEvents.SPACE_PROJECT_CREATE);
     socketCore.off(SocketEvents.SPACE_PROJECT_UPDATE);
     socketCore.off(SocketEvents.SPACE_PROJECT_DELETE);
-    
+
     // Bucket CRUD events (space: namespace)
     socketCore.off(SocketEvents.SPACE_BUCKET_CREATE);
     socketCore.off(SocketEvents.SPACE_BUCKET_UPDATE);
     socketCore.off(SocketEvents.SPACE_BUCKET_DELETE);
-    
+
     // Task CRUD events (space: namespace)
     socketCore.off(SocketEvents.SPACE_TASK_CREATE);
     socketCore.off(SocketEvents.SPACE_TASK_UPDATE);
     socketCore.off(SocketEvents.SPACE_TASK_MOVE);
     socketCore.off(SocketEvents.SPACE_TASK_DELETE);
-    
+
     // Legacy task events (still using old format)
     socketCore.off("project-space:task-update");
     socketCore.off("project-space:task-move");
-    
+
     // Error handling
     socketCore.off("project-space:error");
-    
+
     console.log("🧹 Removed all project space event listeners");
   };
 
@@ -631,13 +632,13 @@ export const useSocketProject = defineStore("socket-project", () => {
   // Cleanup on component unmount
   onBeforeUnmount(async () => {
     console.log("🧹 Project store unmounting - cleaning up projects");
-    
+
     // Leave all projects and clean up state
     await leaveAllProjects();
-    
+
     // Remove all socket event listeners
     removeAllProjectListeners();
-    
+
     // Stop cursor cleanup interval
     stopCleanup();
   });

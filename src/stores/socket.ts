@@ -64,7 +64,7 @@ export const useSocket = defineStore("socket", () => {
   const locationsByCountry = computed(() => spaceStats.value?.locationsByCountry || {});
 
   // Connection management
-  const connect = async (serverUrl = "http://localhost:2223") => {
+  const connect = async (serverUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:2223") => {
     if (socket.value?.connected) {
       console.log("🔌 Already connected to socket server");
       return;

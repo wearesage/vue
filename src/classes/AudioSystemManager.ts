@@ -314,6 +314,11 @@ export class AudioSystemManager {
    * Maps current sample between quietest point and mean volume using adaptive scaling
    */
   tick(frameRate: number): { volume: number; stream: number } {
+    // Don't update analysis when not initialized (e.g., playing silence.mp3)
+    if (!this.state.isInitialized) {
+      return { volume: this.state.volume, stream: this.state.stream };
+    }
+    
     const volume = this.rawVolume;
     this.volumeBuffer.push(volume);
     const frameDuration = 1000 / frameRate;
@@ -427,6 +432,7 @@ export class AudioSystemManager {
 
       // Update state
       this.state.source = "microphone";
+      this.state.isInitialized = true;
       
       console.log('🎤 Microphone initialized successfully! Source set to:', this.state.source);
       console.log('🎤 AudioSystemManager state:', { source: this.state.source, isPrimed: this.state.isPrimed });
@@ -477,6 +483,7 @@ export class AudioSystemManager {
 
       // Update state
       this.state.source = "audio";
+      this.state.isInitialized = true;
       
       console.log('🎵 Audio element source initialized successfully!');
       console.log(`🎵 AudioSystemManager source is now: ${this.state.source}`);
