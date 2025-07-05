@@ -3,12 +3,12 @@ import { ref, computed } from "vue";
 import { api } from "../api/client";
 import { useToast } from "./toast";
 import { useAuth } from "./auth";
-import { useSocket } from "./socket";
+import { useSocketCore } from "./socket-core";
 
 export const useUserFollows = defineStore("userFollows", () => {
   const auth = useAuth();
   const toast = useToast();
-  const socket = useSocket();
+  const socket = useSocketCore();
   
   // Store follow statuses keyed by wallet address
   const followStatuses = ref<Record<string, boolean>>({});

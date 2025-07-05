@@ -41,14 +41,11 @@ export const appInitializationPlugin: PiniaPlugin = ({ store, pinia }) => {
         socketCore.startHeartbeat();
         console.log('💓 Socket heartbeat started');
         
-        // Setup unified space listeners and auto-join if authenticated
-        socketSpace.setupSpaceListeners();
-        console.log('🚀 Unified space listeners setup');
+        // TODO: Add V2 socket integration here if needed for specific functionality
+        // (Space management was replaced with V2 patterns)
+        console.log('🚀 Socket V2 integration ready (space management simplified)');
         
-        if (auth.isAuthenticated) {
-          await socketSpace.autoJoinUserProjects();
-          console.log('🎯 Auto-joined user projects as spaces with unified toast notifications');
-        }
+        // Auto-join functionality moved to individual V2 composables as needed
         
         // Initialize session logging (happens automatically on store creation)
         console.log('📊 Session logging initialized');

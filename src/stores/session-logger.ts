@@ -2,6 +2,7 @@ import { defineStore, acceptHMRUpdate } from "pinia";
 import { ref, computed, watch, onBeforeUnmount } from "vue";
 import { useSocketCore } from "./socket-core";
 import { useAuth } from "./auth";
+import { API_BASE_URL } from "../api/client";
 
 // Session Event Types
 export enum SessionEventType {
@@ -325,7 +326,7 @@ export const useSessionLogger = defineStore("sessionLogger", () => {
       socket.emit("session:log-events", { events });
     } else {
       // HTTP fallback
-      const response = await fetch("/api/log", {
+      const response = await fetch(`${API_BASE_URL}/api/log`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
