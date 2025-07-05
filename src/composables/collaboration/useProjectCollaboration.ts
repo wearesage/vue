@@ -1,10 +1,10 @@
 import { ref, computed, watch } from "vue";
-import { useSocketProject } from "../../stores";
+// import { useSocketProject } from "../../stores"; // DELETED - use V2 targeted messaging
 import { useSharedCursors } from "./useSharedCursors";
 import { useRoute } from "../../router/sage-router";
 
 export function useProjectCollaboration(projectId: Ref<string>) {
-  const socketProject = useSocketProject();
+  // const socketProject = useSocketProject(); // DELETED - use V2 targeted messaging
   const route = useRoute();
 
   // Use shared cursors with project ID directly (no prefix)

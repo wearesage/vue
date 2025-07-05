@@ -1,5 +1,6 @@
 import { ref, computed, watch, onMounted, onUnmounted, Ref, readonly } from "vue";
-import { useSocketCore, useSocketSpace, useViewport } from "../../stores";
+import { useSocketCore, useViewport } from "../../stores";
+// TODO: Replace with V2 targeted messaging for space-specific cursor updates
 
 export interface SharedCursor {
   walletAddress: string;
@@ -16,7 +17,7 @@ export interface SharedParticipant {
 
 export function useSharedCursors(spaceId: Ref<string> | string) {
   const socketCore = useSocketCore();
-  const socketSpace = useSocketSpace();
+  // const socketSpace = useSocketSpace(); // DELETED - use V2 targeted messaging
   const viewport = useViewport();
 
   // Normalize spaceId to ref
@@ -32,9 +33,9 @@ export function useSharedCursors(spaceId: Ref<string> | string) {
   const scrollX = computed(() => viewport.scrollPosition.x);
   const scrollY = computed(() => viewport.scrollPosition.y);
 
-  // Cursor data for this space
-  const cursors = computed(() => socketSpace.getSpaceCursors(normalizedSpaceId.value));
-  const participants = computed(() => socketSpace.getSpaceParticipants(normalizedSpaceId.value));
+  // TODO: Replace with V2 targeted messaging for cursor data
+  const cursors = computed(() => [] as SharedCursor[]);
+  const participants = computed(() => [] as SharedParticipant[]);
 
   // Throttled cursor sending
   let lastCursorSend = 0;

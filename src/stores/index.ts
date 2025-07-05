@@ -6,12 +6,9 @@ export * from "./queue";
 export * from "./popover";
 export * from "./raf";
 export * from "./sketches";
-export * from "./socket";
 export * from "./socket-core";
-export * from "./socket-space"; // 🚀 NEW: Unified space event handling
-// TODO: Remove these old competing stores once migration is complete - temporarily restored to prevent white screen
+// TODO: socket-messaging to be replaced with V2 targeted messaging
 export * from "./socket-messaging";
-export * from "./socket-project";
 export * from "./toast";
 export * from "./user-state";
 export * from "./user-follows";

@@ -20,14 +20,14 @@ export const appInitializationPlugin: PiniaPlugin = ({ store, pinia }) => {
         const { useSocketCore } = await import('../stores/socket-core');
         const { useAuth } = await import('../stores/auth');
         const { useSessionLogger } = await import('../stores/session-logger');
-        const { useSocketSpace } = await import('../stores/socket-space');
+        // const { useSocketSpace } = await import('../stores/socket-space'); // DELETED
         const { initGlobalPerformanceTracking } = await import('../composables/usePerformanceMonitoring');
         
         // Initialize core services
         const socketCore = useSocketCore(pinia);
         const auth = useAuth(pinia);
         const sessionLogger = useSessionLogger(pinia);
-        const socketSpace = useSocketSpace(pinia);
+        // const socketSpace = useSocketSpace(pinia); // DELETED
         
         // Initialize auth first (validates stored tokens)
         await auth.initialize();
