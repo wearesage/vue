@@ -1,4 +1,4 @@
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { createAppKit, useAppKit, useAppKitAccount, useAppKitState, useAppKitProvider, useDisconnect } from "@reown/appkit/vue";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { SolanaAdapter } from "@reown/appkit-adapter-solana";
