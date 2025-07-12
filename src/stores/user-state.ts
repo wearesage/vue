@@ -16,9 +16,6 @@ import {
   DEFAULT_USER_PREFERENCES,
 } from "@wearesage/shared";
 
-// Session logging integration
-import { useSessionLogging } from "../composables/useSessionLogging";
-const { logEvent } = useSessionLogging();
 
 // Re-export queue types for backward compatibility
 export type { QueueTrack } from "./queue";
@@ -339,13 +336,6 @@ export const useUserState = defineStore("userState", () => {
         currentPage.value = newPage;
         broadcastUserState();
         
-        // Log page view event
-        logEvent('PAGE_VIEW' as any, {
-          fromPage: oldPage,
-          toPage: newPage,
-          route: newRouteName as string,
-          fullPath: route.value.fullPath
-        });
       }
     },
     { immediate: true }

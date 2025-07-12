@@ -19,14 +19,11 @@ export const appInitializationPlugin: PiniaPlugin = ({ store, pinia }) => {
         // Import stores dynamically to avoid circular dependencies
         const { useSocketCore } = await import('../stores/socket-core');
         const { useAuth } = await import('../stores/auth');
-        const { useSessionLogger } = await import('../stores/session-logger');
         // const { useSocketSpace } = await import('../stores/socket-space'); // DELETED
-        const { initGlobalPerformanceTracking } = await import('../composables/usePerformanceMonitoring');
         
         // Initialize core services
         const socketCore = useSocketCore(pinia);
         const auth = useAuth(pinia);
-        const sessionLogger = useSessionLogger(pinia);
         // const socketSpace = useSocketSpace(pinia); // DELETED
         
         // Initialize auth first (validates stored tokens)
@@ -47,12 +44,6 @@ export const appInitializationPlugin: PiniaPlugin = ({ store, pinia }) => {
         
         // Auto-join functionality moved to individual V2 composables as needed
         
-        // Initialize session logging (happens automatically on store creation)
-        console.log('📊 Session logging initialized');
-        
-        // Initialize global performance tracking
-        initGlobalPerformanceTracking();
-        console.log('⚡ Performance tracking initialized');
         
       } catch (error) {
         console.error('❌ App initialization failed:', error);

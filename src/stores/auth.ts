@@ -9,19 +9,6 @@ import { useUI } from "./ui";
 import { VITE_DEFAULT_AUTHENTICATED_VIEW, VITE_ADMIN_WALLET } from "../constants/env";
 import { UserRole } from "@wearesage/shared";
 
-// Session logging integration
-let sessionLogger: any = null;
-const loadSessionLogger = async () => {
-  if (!sessionLogger) {
-    try {
-      const { useSessionLogger } = await import('./session-logger');
-      sessionLogger = useSessionLogger();
-    } catch (error) {
-      console.warn('Session logger not available:', error);
-    }
-  }
-  return sessionLogger;
-};
 
 export const useAuth = defineStore("auth", () => {
   const router = useRouter();
@@ -44,6 +31,12 @@ export const useAuth = defineStore("auth", () => {
   const isImpersonating = ref<boolean>(localStorage.getItem("isImpersonating") === "true");
 
   const isAuthenticated = computed(() => !!authToken.value && !!user.value);
+  
+  // Helper computed properties for UI state
+  const isWalletConnected = computed(() => wallet.isConnected.value);
+  const isWalletInitializing = computed(() => wallet.isInitializing.value);
+  const needsWalletConnection = computed(() => !isWalletInitializing.value && !isWalletConnected.value);
+  const needsAuthentication = computed(() => !isWalletInitializing.value && isWalletConnected.value && !isAuthenticated.value);
 
   // When impersonating, return the target user's wallet address, otherwise the current user's
   const walletAddress = computed(() => {
@@ -281,198 +274,125 @@ export const useAuth = defineStore("auth", () => {
     socketCore.off("auth:invalid");
   }
 
+  async function connectWallet() {
+    try {
+      // Force disconnect first to clear any stale state
+      if (wallet.isConnected) {
+        console.log("💰 Wallet shows connected, disconnecting first to clear state");
+        await wallet.disconnect();
+      }
+
+      console.log("💰 Opening wallet connection modal");
+      toast.message("Please connect your wallet...");
+      await wallet.connect();
+      
+      // Check if connection was successful
+      if (!wallet.isConnected || !wallet.address.value) {
+        toast.error("Wallet connection was cancelled or failed");
+        return;
+      }
+      
+      toast.success(`Wallet connected: ${wallet.address.value.slice(0, 8)}...`);
+    } catch (error: any) {
+      console.error("Wallet connection failed:", error);
+      toast.error("Failed to connect wallet");
+      throw error;
+    }
+  }
+
   async function signIn() {
     try {
+      // Require wallet to be connected first
+      if (!wallet.isConnected || !wallet.address.value) {
+        toast.error("Please connect your wallet first");
+        throw new Error("Wallet not connected");
+      }
+
       // Set user intent flag to prevent auto-firing
       userIntentToSignIn.value = true;
       console.log("🟢 User intent flag set to TRUE - explicit signIn called");
       isAuthenticating.value = true;
       
-      // Log authentication attempt
-      const logger = await loadSessionLogger();
-      if (logger) {
-        logger.logEvent(logger.SessionEventType.AUTH_LOGIN_ATTEMPT, {
-          method: 'wallet',
-          timestamp: Date.now()
-        });
-      }
-
-      // Check wallet connection status and handle accordingly
-      if (!wallet.isConnected) {
-        console.log("💰 No wallet connected - opening AppKit modal");
-        toast.message("Please connect your wallet...");
-        await wallet.connect();
-        
-        // After modal interaction, check if connection was successful
-        if (!wallet.isConnected) {
-          toast.error("Wallet connection was cancelled or failed");
-          return;
-        }
-        toast.success("Wallet connected successfully!");
-      } else {
-        console.log("💰 Wallet already connected - proceeding with authentication");
-        toast.message("Using connected wallet for authentication...");
-      }
-
-      let walletAddress = wallet.address.value;
-      if (!walletAddress) {
-        // Wallet shows connected but no address - likely a connection issue
-        console.log("💰 Wallet connected but no address - opening modal to reconnect");
-        toast.message("Please reconnect your wallet...");
-        await wallet.connect();
-        
-        // Check again after reconnection attempt
-        walletAddress = wallet.address.value;
-        if (!walletAddress) {
-          toast.error("Unable to connect wallet - please try again");
-          return;
-        }
-      }
-
-      // Socket-first authentication
-      const socketCore = useSocketCore();
-
-      // Ensure socket is connected and wait for it
-      if (!socketCore.connected) {
-        await socketCore.connect();
-      }
-      await socketCore.waitForConnection();
-
-      return new Promise<void>((resolve, reject) => {
-        // Handle challenge response
-        const handleChallenge = async ({ message }: { message: string }) => {
-          try {
-            // Only proceed if user explicitly intended to sign in
-            if (!userIntentToSignIn.value) {
-              console.log("🚫 Wallet signing blocked - no user intent (flag is false)");
-              socketCore.off("auth:challenge-response", handleChallenge);
-              socketCore.off("auth:success", handleSuccess);
-              socketCore.off("auth:error", handleError);
-              reject(new Error("No user intent to sign in"));
-              return;
-            }
-            
-            console.log("✅ User intent flag is TRUE - proceeding with signing");
-            
-            console.log("🔑 Challenge received:", message.substring(0, 50) + "...");
-            toast.message("Please sign the message in your wallet...");
-            const signature = await wallet.signMessage(message);
-
-            toast.message("Verifying signature...");
-            socketCore.emit("auth:wallet-verify", { message, signature, walletAddress });
-          } catch (error: any) {
-            if (error.message?.includes("rejected")) {
-              toast.error("Signature rejected");
-            } else {
-              toast.error("Failed to sign message");
-            }
-            cleanup();
-            reject(error);
-          }
-        };
-
-        // Handle auth success
-        const handleSuccess = async ({ user: userData, accessToken, refreshToken: newRefreshToken }: any) => {
-          authToken.value = accessToken;
-          refreshToken.value = newRefreshToken;
-          user.value = userData;
-          toast.message(`Welcome ${userData.walletAddress.slice(0, 8)}!`);
-          
-          // Log successful authentication
-          const logger = await loadSessionLogger();
-          if (logger) {
-            logger.logEvent(logger.SessionEventType.AUTH_LOGIN_SUCCESS, {
-              method: 'wallet',
-              walletAddress: userData.walletAddress,
-              userRole: userData.role,
-              timestamp: Date.now()
-            });
-          }
-          
-          // 🚀 Extension Auth Handoff - Send auth data to Chrome extension if installed
-          try {
-            if (typeof window !== 'undefined' && window.postMessage) {
-              console.log("🔗 Attempting extension auth handoff...");
-              window.postMessage({
-                type: 'KALEIDOSYNC_AUTH_HANDOFF',
-                source: 'kaleidosync-page',
-                authToken: accessToken,
-                refreshToken: newRefreshToken,
-                user: userData,
-                timestamp: Date.now()
-              }, '*');
-              console.log("✅ Extension auth handoff message sent");
-            }
-          } catch (error) {
-            console.warn("Extension handoff failed (extension may not be installed):", error);
-          }
-          
-          if (route.value.path === "/") {
-            console.log("🚀 Socket auth successful, redirecting to", VITE_DEFAULT_AUTHENTICATED_VIEW);
-            router.replace(VITE_DEFAULT_AUTHENTICATED_VIEW);
-          }
-          cleanup();
-          resolve();
-        };
-
-        // Handle auth error
-        const handleError = async ({ message }: { message: string }) => {
-          toast.error(`Authentication failed: ${message}`);
-          
-          // Log authentication failure
-          const logger = await loadSessionLogger();
-          if (logger) {
-            logger.logEvent(logger.SessionEventType.AUTH_LOGIN_FAILURE, {
-              method: 'wallet',
-              error: message,
-              timestamp: Date.now()
-            });
-          }
-          
-          cleanup();
-          reject(new Error(message));
-        };
-
-        // Cleanup function
-        const cleanup = () => {
-          socketCore.off("auth:challenge-response", handleChallenge);
-          socketCore.off("auth:success", handleSuccess);
-          socketCore.off("auth:error", handleError);
-          console.log("🔴 User intent flag reset to FALSE - auth cleanup");
-          userIntentToSignIn.value = false; // Reset user intent flag
-        };
-
-        // Set up socket listeners
-        socketCore.on("auth:challenge-response", handleChallenge);
-        socketCore.on("auth:success", handleSuccess);
-        socketCore.on("auth:error", handleError);
-
-        // Request challenge via socket (after listeners are set up)
-        toast.message("Getting authentication challenge...");
-        console.log("🔑 Requesting challenge for:", walletAddress);
-        socketCore.emit("auth:wallet-challenge", { walletAddress });
+      const walletAddress = wallet.address.value;
+      console.log("💰 Wallet connected - proceeding with authentication for:", walletAddress.slice(0, 8));
+      
+      // HTTP-based authentication (much simpler!)
+      toast.message("Getting authentication challenge...");
+      
+      // Step 1: Get challenge from server
+      const challengeResponse = await api.post("/api/auth/challenge", {
+        address: walletAddress
       });
+      
+      const { message } = challengeResponse.data;
+      console.log("🔑 Challenge received:", message.substring(0, 50) + "...");
+      
+      // Step 2: Sign the challenge message
+      toast.message("Please sign the message in your wallet...");
+      const signature = await wallet.signMessage(message);
+      
+      // Step 3: Verify signature and get tokens
+      toast.message("Verifying signature...");
+      const authResponse = await api.post("/api/auth/verify", {
+        message,
+        signature,
+        address: walletAddress
+      });
+      
+      // Step 4: Store auth data
+      const { user: userData, tokens } = authResponse.data;
+      authToken.value = tokens.accessToken;
+      refreshToken.value = tokens.refreshToken;
+      user.value = userData;
+      
+      toast.success(`Welcome ${userData.walletAddress.slice(0, 8)}!`);
+      
+      // 🚀 Extension Auth Handoff - Send auth data to Chrome extension if installed
+      try {
+        if (typeof window !== 'undefined' && window.postMessage) {
+          console.log("🔗 Attempting extension auth handoff...");
+          window.postMessage({
+            type: 'KALEIDOSYNC_AUTH_HANDOFF',
+            source: 'kaleidosync-page',
+            authToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            user: userData,
+            timestamp: Date.now()
+          }, '*');
+          console.log("✅ Extension auth handoff message sent");
+        }
+      } catch (error) {
+        console.warn("Extension handoff failed (extension may not be installed):", error);
+      }
+      
+      // Redirect if on homepage
+      if (route.value.path === "/") {
+        console.log("🚀 HTTP auth successful, redirecting to", VITE_DEFAULT_AUTHENTICATED_VIEW);
+        router.replace(VITE_DEFAULT_AUTHENTICATED_VIEW);
+      }
+      
     } catch (error: any) {
       console.error("Sign in failed:", error);
-      toast.error("Authentication failed");
+      
+      if (error.message?.includes("rejected")) {
+        toast.error("Signature rejected");
+      } else if (error.message?.includes("aborted") || error.message?.includes("Request was aborted")) {
+        toast.message("Sign in cancelled");
+        return; // Don't throw on user cancellation
+      } else if (error.response?.status === 401) {
+        toast.error("Invalid signature");
+      } else {
+        toast.error("Authentication failed");
+      }
       throw error;
     } finally {
       isAuthenticating.value = false;
-      // Don't reset userIntentToSignIn here - let the cleanup function handle it
-      // after the Promise resolves/rejects
+      userIntentToSignIn.value = false;
     }
   }
 
   async function signOut() {
     try {
-      // Log logout event
-      const logger = await loadSessionLogger();
-      if (logger) {
-        logger.logEvent(logger.SessionEventType.AUTH_LOGOUT, {
-          walletAddress: walletAddress.value,
-          timestamp: Date.now()
-        });
-      }
       
       // Socket-first logout
       const socketCore = useSocketCore();
@@ -592,12 +512,17 @@ export const useAuth = defineStore("auth", () => {
     loading: computed(() => loading.value),
     isAuthenticating: computed(() => isAuthenticating.value),
     isAuthenticated,
+    isWalletConnected,
+    isWalletInitializing,
+    needsWalletConnection,
+    needsAuthentication,
     isAdmin,
     isArtist,
     isSubscriber,
     isPaidTier,
     isArtistOrAdmin,
     userRole,
+    connectWallet,
     signIn,
     signOut,
     initialize,

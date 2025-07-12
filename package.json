@@ -1,6 +1,6 @@
 {
   "name": "@wearesage/vue",
-  "version": "4.0.0",
+  "version": "4.2.0",
   "type": "module",
   "main": "./src/client.ts",
   "types": "./src/client.ts",
@@ -112,7 +112,6 @@
     "socket.io-client": "^4.8.1",
     "thememirror": "2.0.1",
     "three": "0.173.0",
-    "ts-morph": "^25.1.0",
     "unplugin-auto-import": "19.3.0",
     "unplugin-vue-components": "28.7.0",
     "unplugin-vue-router": "0.12.0",

@@ -4,7 +4,7 @@
       <Column>
         <h2>{{ title }}</h2>
       </Column>
-      <AudiusArtwork v-for="(item, i) in audius.trending[type].week" :key="i" :item="item" @click="$emit('select', item)" />
+      <AudiusArtwork v-for="(item, i) in data || audius.trending[type].week" :key="i" :item="item" @click="$emit('select', item)" />
     </div>
   </Row>
 </template>
@@ -16,8 +16,9 @@ import AudiusArtwork from "./AudiusArtwork.vue";
 import { useAudius } from "../../stores/audius";
 
 defineProps<{
-  title: string;
-  type: "playlists" | "tracks";
+  title?: string;
+  type?: "playlists" | "tracks";
+  data?: any;
 }>();
 
 defineEmits(["select"]);

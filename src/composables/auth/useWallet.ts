@@ -59,6 +59,24 @@ export function useWallet() {
   const eip155Provider = useAppKitProvider("eip155");
   const solanaProvider = useAppKitProvider("solana");
 
+  // Track initialization state
+  const isInitializing = ref(true);
+
+  // Watch for account state to stabilize
+  watch(
+    [account, appKitState],
+    () => {
+      // Consider initialization complete when account state is stable
+      if (isInitializing.value) {
+        // Give enough time for wallet to check stored connections
+        setTimeout(() => {
+          isInitializing.value = false;
+        }, 1500); // Match the time you observed for full wallet initialization
+      }
+    },
+    { immediate: true }
+  );
+
   // Computed properties
   const isConnected = computed(() => account.value.isConnected || false);
   const address = computed(() => account.value.address || null);
@@ -113,7 +131,7 @@ export function useWallet() {
    */
   async function waitForProvider(maxWait = 2000): Promise<boolean> {
     const startTime = Date.now();
-    
+
     return new Promise((resolve) => {
       const checkProvider = () => {
         if (
@@ -123,15 +141,15 @@ export function useWallet() {
           resolve(true);
           return;
         }
-        
+
         if (Date.now() - startTime > maxWait) {
           resolve(false);
           return;
         }
-        
+
         setTimeout(checkProvider, 50);
       };
-      
+
       checkProvider();
     });
   }
@@ -140,6 +158,7 @@ export function useWallet() {
    * Sign a message with the connected wallet
    */
   async function signMessage(message: string): Promise<string> {
+    console.log(message);
     if (!isConnected.value || !address.value) {
       throw new Error("Wallet not connected");
     }
@@ -151,7 +170,7 @@ export function useWallet() {
     }
 
     // Debug log to understand provider state
-    console.log('🔐 Signing message:', {
+    console.log("🔐 Signing message:", {
       chainType: chainType.value,
       address: address.value,
       hasEip155Provider: !!eip155Provider?.walletProvider,
@@ -187,7 +206,11 @@ export function useWallet() {
         // Convert to base58 if needed
         signature = rawSignature instanceof Uint8Array ? bs58.encode(rawSignature) : rawSignature;
       } else {
-        throw new Error(`Wallet provider not available. Chain: ${chainType.value}, EVM: ${!!eip155Provider?.walletProvider}, Solana: ${!!solanaProvider?.walletProvider}`);
+        throw new Error(
+          `Wallet provider not available. Chain: ${
+            chainType.value
+          }, EVM: ${!!eip155Provider?.walletProvider}, Solana: ${!!solanaProvider?.walletProvider}`
+        );
       }
 
       return signature;
@@ -208,6 +231,7 @@ export function useWallet() {
     connectionType,
     email,
     isModalOpen,
+    isInitializing,
 
     // Actions
     connect,

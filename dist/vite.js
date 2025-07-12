@@ -72,7 +72,7 @@ export async function createSageConfig(userConfig = {}) {
         port: 5173,
     };
     if (userConfig.apiProxy) {
-        const { target = process.env.VITE_API_BASE_URL || "http://localhost:2223", path = "/api" } = userConfig.apiProxy;
+        const { target = process.env.VITE_API_BASE_URL, path = "/api" } = userConfig.apiProxy;
         serverConfig.proxy = {
             [path]: {
                 target,

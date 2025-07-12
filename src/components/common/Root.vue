@@ -1,9 +1,10 @@
 <template>
   <transition :name="`view`">
-    <SageRouterView v-if="!auth.loading" :key="route.path">
-      <template #loading>
-        <Loading />
-      </template>
+    <Loading v-if="auth.loading || auth.isWalletInitializing" />
+  </transition>
+
+  <transition :name="`view`">
+    <SageRouterView :key="route.path" v-if="!(auth.loading || auth.isWalletInitializing)">
       <template #not-found>
         <View :padding="1" :gap="1" center cascade>
           <Row>
@@ -14,8 +15,6 @@
       </template>
     </SageRouterView>
   </transition>
-
-  <Loading />
 </template>
 
 <script setup lang="ts">
@@ -39,14 +38,14 @@ watch(
       router.replace(currentRoute.meta.redirectWhenAuthenticated);
       return;
     }
-    
+
     // Basic auth check
     if (currentRoute.meta?.requiresAuth && !authenticated) {
       console.log("🚫 Auth required but not authenticated - redirecting to homepage");
       router.replace("/");
       return;
     }
-    
+
     // Role-based access checks (only if authenticated)
     if (authenticated && user) {
       // Admin access required
@@ -55,28 +54,28 @@ watch(
         router.replace("/");
         return;
       }
-      
+
       // Artist access required
       if (currentRoute.meta?.requiresArtist && !auth.isArtist) {
         console.log("🚫 Artist access required - redirecting to homepage");
         router.replace("/");
         return;
       }
-      
+
       // Subscriber access required
       if (currentRoute.meta?.requiresSubscriber && !auth.isSubscriber) {
         console.log("🚫 Subscriber access required - redirecting to homepage");
         router.replace("/");
         return;
       }
-      
+
       // Paid tier access required (subscriber, artist, or admin)
       if (currentRoute.meta?.requiresPaidTier && !auth.isPaidTier) {
         console.log("🚫 Paid tier access required - redirecting to homepage");
         router.replace("/");
         return;
       }
-      
+
       // Artist or Admin access required
       if (currentRoute.meta?.requiresArtistOrAdmin && !auth.isArtistOrAdmin) {
         console.log("🚫 Artist or Admin access required - redirecting to homepage");
