@@ -38,13 +38,12 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { Row, Icon } from "../../components";
-import { useQueue, useSources, useUserState } from "../../stores";
+import { useQueue, useSources } from "../../stores";
 import { AudioSource } from "@wearesage/shared";
 
 // Simple: just show whatever's in the queue
 const queue = useQueue();
 const sources = useSources();
-const userState = useUserState();
 
 // Queue tracks are already adapted, so use them directly
 const currentTrack = computed(() => {
@@ -56,9 +55,6 @@ const currentTrack = computed(() => {
 // Only show "no track playing" message for sources we don't control (like Spotify)
 // But respect alwaysShowTrack preference to force visibility
 const shouldShowNoTrackMessage = computed(() => {
-  // If alwaysShowTrack is enabled, always show a message when no track
-  if (userState.alwaysShowTrack) return true;
-
   // Otherwise, only show for Spotify (sources we don't control)
   return sources.source === AudioSource.SPOTIFY;
 });

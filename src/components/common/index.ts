@@ -1,4 +1,3 @@
-export { default as AccountPill } from "./AccountPill.vue";
 export { default as AudioSourceButton } from "./AudioSourceButton.vue";
 export { default as Avatar } from "./Avatar.vue";
 export { default as Button } from "./Button.vue";

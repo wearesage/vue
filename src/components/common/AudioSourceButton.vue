@@ -8,14 +8,12 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { IconButton, useSources, useUserState } from "@wearesage/vue";
+import { IconButton, useSources } from "@wearesage/vue";
 
 defineEmits(["click"]);
 
-const userState = useUserState();
 const sources = useSources();
-const showLabels = computed(() => userState.showMenuLabels);
-const label = computed(() => (showLabels.value ? sources.prettySource ?? "Audio Source" : null));
+const label = computed(() => (true ? sources.prettySource ?? "Audio Source" : null));
 </script>
 
 <style lang="scss" scoped>

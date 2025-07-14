@@ -2,7 +2,6 @@ import { defineStore, acceptHMRUpdate } from "pinia";
 import { ref, shallowRef, computed, watch } from "vue";
 // import { spotifyApi, type SpotifyAnalysis } from "../api/spotify";
 import { useToast } from "./toast";
-import { useAuth } from "./auth";
 import { useEchoNest } from "../composables/audio";
 import { useQueue } from "./queue";
 import { useSources } from "./sources";
@@ -13,7 +12,6 @@ import Cookies from "js-cookie";
 
 export const useSpotify = defineStore("spotify", () => {
   const toast = useToast();
-  const auth = useAuth();
   const queue = useQueue();
   const sources = useSources();
   const profile = computed(() => auth?.user?.spotifyProfile);
@@ -128,19 +126,9 @@ export const useSpotify = defineStore("spotify", () => {
     if (!analysisData.value) startInterval();
   }
 
-  /**
-   * Reset Spotify store state (called on logout)
-   */
   function reset() {
-    console.log("🎵 Resetting Spotify store state");
-
-    // Stop any running intervals
     stopInterval();
-
-    // Clear all reactive data
     analysisData.value = null;
-
-    // Note: profile is computed from auth.user.spotifyProfile, so it will clear automatically
   }
 
   return {

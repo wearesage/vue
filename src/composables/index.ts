@@ -47,10 +47,6 @@ export * from "./navigation/useNativeShare";
 export * from "./navigation/usePageName";
 export * from "./navigation/useRouteParamId";
 
-// Collaborative Spaces
-export * from "./spaces/useAggregateSpace";
-export * from "./spaces/useGlobalActiveUsers";
-
 // Collaboration
 // export * from "./collaboration/useSharedCursors";
 // export * from "./collaboration/useProjectCollaboration";
