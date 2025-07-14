@@ -39,7 +39,6 @@ export * from "./ui/useWithUnit";
 
 // Data & Search
 export * from "./data/useD3Results";
-export * from "./data/useDebouncedSearch";
 export * from "./data/usePaginatedCollection";
 
 // Navigation & Routing
@@ -53,12 +52,10 @@ export * from "./spaces/useAggregateSpace";
 export * from "./spaces/useGlobalActiveUsers";
 
 // Collaboration
-export * from "./collaboration/useSharedCursors";
-export * from "./collaboration/useProjectCollaboration";
+// export * from "./collaboration/useSharedCursors";
+// export * from "./collaboration/useProjectCollaboration";
 
 // Auth
-export * from "./auth/useWallet";
-export * from "./auth/useAdmin";
 
 // App
 // export * from "./app/useAppInitialization"; // DELETED - no longer needed with Sage Router!
@@ -71,4 +68,3 @@ export * from "./utilities/useRandomGreeting";
 export * from "./utilities/useReactiveValue";
 export * from "./utilities/useThrottledConsole";
 export * from "./utilities/useTypedText";
-

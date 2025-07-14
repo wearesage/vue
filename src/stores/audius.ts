@@ -1,80 +1,60 @@
 import { defineStore, acceptHMRUpdate } from "pinia";
 import { ref } from "vue";
-import { api } from "../api/client";
 import { useDebouncedSearch } from "../composables/data/useDebouncedSearch";
 
-const RANGES = ["week", "month", "year"] as const;
-
+const API = import.meta.env.VITE_API;
+const RANGES = ["week", "month"] as const;
 type Range = (typeof RANGES)[number];
 
 export const useAudius = defineStore("audius", () => {
   const { query, results } = useDebouncedSearch(search);
+
   const trending = ref({
     tracks: { week: [], month: [], year: [] },
     playlists: { week: [], month: [], year: [] },
   });
 
-  async function search(query: string) {
-    const response = await api.get(`/api/audius/search/${query}`);
-    return response.data;
+  async function search(q: string) {
+    const res = await fetch(`${API}/api/audius/search/${encodeURIComponent(q)}`);
+    const data = await res.json();
+    return data;
   }
 
   async function fetchUser(handle: string) {
-    const response = await api.get(`/api/audius/users/${handle}`);
-    return response.data;
+    const res = await fetch(`${API}/api/audius/users/${encodeURIComponent(handle)}`);
+    const data = await res.json();
+    return data;
   }
 
   async function fetchPlaylistById(id: string) {
-    const response = await api.get(`/api/audius/playlists/${id}`);
-    return response.data;
-  }
-
-  async function fetchTrendingPlaylists(range: Range) {
-    const response = await api.get(`/api/audius/playlists/trending/${range}`);
-    return response.data;
-  }
-
-  async function fetchTrendingTracks(range: Range) {
-    const response = await api.get(`/api/audius/tracks/trending/${range}`);
-    return response.data;
-  }
-
-  async function fetchAllTrendingPlaylists() {
-    const [week, month, year] = await Promise.all(RANGES.map((range) => fetchTrendingPlaylists(range)));
-    return { week, month, year };
-  }
-
-  async function fetchAllTrendingTracks() {
-    const [week, month, year] = await Promise.all(RANGES.map((range) => fetchTrendingTracks(range)));
-    return { week, month, year };
+    const res = await fetch(`${API}/api/audius/playlists/${encodeURIComponent(id)}`);
+    const data = await res.json();
+    return data;
   }
 
   async function fetchTrending() {
-    const [tracks, playlists] = await Promise.all([fetchAllTrendingTracks(), fetchAllTrendingPlaylists()]);
-
-    trending.value = {
-      tracks,
-      playlists,
-    };
+    const res = await fetch(`${API}/api/audius/trending`);
+    const data = await res.json();
+    console.log(data);
+    trending.value.tracks = data.tracks;
+    trending.value.playlists = data.playlists;
+    return data;
   }
 
   async function getTrackStream(trackId: string) {
-    const response = await api.get(`/api/audius/stream/${trackId}`);
-    return response.data;
+    const res = await fetch(`${API}/api/audius/stream/${encodeURIComponent(trackId)}`);
+    const data = await res.json();
+    return data;
   }
 
   return {
-    fetchTrendingPlaylists,
-    fetchTrendingTracks,
-    fetchAllTrendingPlaylists,
-    fetchAllTrendingTracks,
+    query,
+    results,
+    trending,
     fetchTrending,
     fetchPlaylistById,
     fetchUser,
     getTrackStream,
-    trending,
-    query,
-    results,
   };
 });
 

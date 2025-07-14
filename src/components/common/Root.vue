@@ -34,15 +34,15 @@ watch(
   [() => auth.isAuthenticated, () => route.value, () => auth.user],
   ([authenticated, currentRoute, user]) => {
     if (authenticated && currentRoute.meta?.redirectWhenAuthenticated) {
-      console.log("🎉 Authenticated user on redirect page - redirecting to", currentRoute.meta.redirectWhenAuthenticated);
-      router.replace(currentRoute.meta.redirectWhenAuthenticated);
+      // console.log("🎉 Authenticated user on redirect page - redirecting to", currentRoute.meta.redirectWhenAuthenticated);
+      // router.replace(currentRoute.meta.redirectWhenAuthenticated);
       return;
     }
 
     // Basic auth check
     if (currentRoute.meta?.requiresAuth && !authenticated) {
-      console.log("🚫 Auth required but not authenticated - redirecting to homepage");
-      router.replace("/");
+      // console.log("🚫 Auth required but not authenticated - redirecting to homepage");
+      // router.replace("/");
       return;
     }
 

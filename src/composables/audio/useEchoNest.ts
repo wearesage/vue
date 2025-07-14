@@ -17,13 +17,13 @@ type ActiveIntervalData = Record<Interval, [IntervalIndex, IntervalProgress, Int
 export function useEchoNest(analysisData: ShallowRef<SpotifyAnalysis | null>) {
   const raf = useRAF();
   const now = computed(() => raf.now);
-  const track = computed(() => analysisData.value?.track || null);
+  const track = computed(() => analysisData.value?.track.item || null);
   const playing = computed(() => analysisData.value?.isPlaying || false);
   const latency = ref(0);
   const stream = ref(0);
-  const position = computed(() => (analysisData.value ? now.value - analysisData.value.timestamp : null));
+  const position = computed(() => (analysisData.value ? now.value - analysisData.value.track.timestamp : null));
   const progress = computed<number | null>(() =>
-    analysisData.value ? clamp(position.value! / analysisData.value.track.duration_ms) : null
+    analysisData.value ? clamp(position.value! / analysisData.value.track.item.duration_ms) : null
   );
   const audioAnalyser = ref<SpotifyAudioAnalyser | null>(
     new SpotifyAudioAnalyser([

@@ -1,6 +1,6 @@
 import { defineStore, acceptHMRUpdate } from "pinia";
 import { ref, shallowRef, computed, watch } from "vue";
-import { spotifyApi, type SpotifyAnalysis } from "../api/spotify";
+// import { spotifyApi, type SpotifyAnalysis } from "../api/spotify";
 import { useToast } from "./toast";
 import { useAuth } from "./auth";
 import { useEchoNest } from "../composables/audio";
@@ -9,6 +9,7 @@ import { useSources } from "./sources";
 import { AudioSource } from "@wearesage/shared";
 import type { QueueTrack } from "./queue";
 import { adaptSpotifyTrack } from "../composables/audio/useTrackAdapter";
+import Cookies from "js-cookie";
 
 export const useSpotify = defineStore("spotify", () => {
   const toast = useToast();
@@ -16,10 +17,14 @@ export const useSpotify = defineStore("spotify", () => {
   const queue = useQueue();
   const sources = useSources();
   const profile = computed(() => auth?.user?.spotifyProfile);
-  const analysisData = shallowRef<SpotifyAnalysis | null>(null);
+  const analysisData = shallowRef<any>();
   const { stream, volume, progress, position, track, playing, latency } = useEchoNest(analysisData);
   const fetchInterval = ref();
   const lastQueueClearTime = ref(0);
+  const SpotifyAccessToken = Cookies.get("spotify_access_token");
+  const SpotifyRefreshToken = Cookies.get("spotify_refresh_token");
+  const accessToken = ref(SpotifyAccessToken);
+  const refreshToken = ref(SpotifyRefreshToken);
 
   watch(progress, (val: number) => {
     // Only fetch new analysis if Spotify is the active source and track ended
@@ -31,17 +36,17 @@ export const useSpotify = defineStore("spotify", () => {
   // Sync Spotify track to queue when it changes
   watch(track, (newTrack) => {
     if (!newTrack) return;
-    
+
     // Only sync to queue if Spotify is the active source
     if (sources.source !== AudioSource.SPOTIFY) {
-      console.log('🎵 Spotify: Track changed but not active source, skipping queue update');
+      console.log("🎵 Spotify: Track changed but not active source, skipping queue update");
       return;
     }
-    
+
     // Use the track adapter to properly convert Spotify data
     const adaptedTrack = adaptSpotifyTrack(newTrack);
     if (!adaptedTrack) return;
-    
+
     // Convert to QueueTrack format
     const queueTrack: QueueTrack = {
       id: adaptedTrack.id,
@@ -52,15 +57,15 @@ export const useSpotify = defineStore("spotify", () => {
       album: adaptedTrack.album,
       duration: adaptedTrack.duration,
       artwork: adaptedTrack.artwork,
-      rawData: adaptedTrack.rawData
+      rawData: adaptedTrack.rawData,
     };
-    
+
     // Only update queue if this is a different track
     const currentQueueTrack = queue.currentTrack;
     if (!currentQueueTrack || currentQueueTrack.sourceId !== adaptedTrack.sourceId) {
-      console.log('🎵 Spotify: Adding track to queue:', queueTrack.title);
+      console.log("🎵 Spotify: Adding track to queue:", queueTrack.title);
       queue.setQueue([queueTrack], 0);
-      
+
       // Set playing state based on Spotify's playing state
       if (playing.value && !queue.queue.isPlaying) {
         queue.queue.isPlaying = true;
@@ -80,9 +85,12 @@ export const useSpotify = defineStore("spotify", () => {
 
   async function getSpotifyTokens() {
     try {
-      const currentUrl = window.location.href.split("?")[0];
-      const data = await spotifyApi.initializeAuth(currentUrl);
-      document.location.href = data.authUrl;
+      if (!accessToken.value) {
+        const currentUrl = window.location.href.split("?")[0];
+        document.location.href = `${import.meta.env.VITE_API}/api/spotify/auth?returnUrl=${currentUrl}`;
+      } else {
+        getCurrentAnalysis();
+      }
     } catch (error) {
       console.log(error);
     }
@@ -90,23 +98,8 @@ export const useSpotify = defineStore("spotify", () => {
 
   async function getCurrentAnalysis() {
     try {
-      const newAnalysisData = await spotifyApi.getCurrentAnalysis();
-      
-      // If Spotify reports nothing playing AND Spotify is the active source
-      if (!newAnalysisData && sources.source === AudioSource.SPOTIFY) {
-        // Throttle queue clearing to prevent spam (max once every 10 seconds)
-        const now = Date.now();
-        if (now - lastQueueClearTime.value > 10000) {
-          console.log('🎵 Spotify: No track playing (commercial/track ended), clearing queue');
-          queue.clearQueue();
-          lastQueueClearTime.value = now;
-        }
-        analysisData.value = null;
-        return;
-      }
-      
-      analysisData.value = newAnalysisData;
-      if (!analysisData.value) startInterval();
+      const data = await fetch(`${import.meta.env.VITE_API}/api/spotify/now-playing`, { credentials: "include" }).then((res) => res.json());
+      analysisData.value = data;
     } catch (error) {
       console.error("Failed to get current analysis:", error);
     }
@@ -126,7 +119,7 @@ export const useSpotify = defineStore("spotify", () => {
   }
 
   async function initialize() {
-    await getCurrentAnalysis();
+    getSpotifyTokens();
 
     if (profile.value?.display_name) {
       toast.message(`Connected to Spotify as ${profile.value?.display_name}!`);
@@ -139,14 +132,14 @@ export const useSpotify = defineStore("spotify", () => {
    * Reset Spotify store state (called on logout)
    */
   function reset() {
-    console.log('🎵 Resetting Spotify store state');
-    
+    console.log("🎵 Resetting Spotify store state");
+
     // Stop any running intervals
     stopInterval();
-    
+
     // Clear all reactive data
     analysisData.value = null;
-    
+
     // Note: profile is computed from auth.user.spotifyProfile, so it will clear automatically
   }
 

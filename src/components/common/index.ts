@@ -2,7 +2,7 @@ export { default as AccountPill } from "./AccountPill.vue";
 export { default as AudioSourceButton } from "./AudioSourceButton.vue";
 export { default as Avatar } from "./Avatar.vue";
 export { default as Button } from "./Button.vue";
-export { default as FollowButton } from "./FollowButton.vue";
+// export { default as FollowButton } from "./FollowButton.vue";
 export { default as Calendar } from "./Calendar.vue";
 export { default as Camera } from "./Camera.vue";
 export { default as CloseButton } from "./CloseButton.vue";
