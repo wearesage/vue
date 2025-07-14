@@ -3,7 +3,6 @@
     ref="container"
     :class="{ centered, cascade }"
     @scroll="onScroll"
-    @wheel="e => onWheel(e)"
     @mousemove="e => onMouseMove(e)"
     @touchstart="onTouchStart"
     @touchmove="onTouchMove"
@@ -207,6 +206,7 @@ main {
   @include flex-column(start, start);
   @include hide-scroll-bar;
   position: fixed;
+  z-index: 2;
   top: 0;
   left: 0;
   will-change: transform, opacity;

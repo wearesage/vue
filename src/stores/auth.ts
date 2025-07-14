@@ -1,262 +1,171 @@
 import { defineStore, acceptHMRUpdate } from "pinia";
-import { ref, computed, watch, nextTick } from "vue";
+import { ref, computed, watch } from "vue";
+import { createAppKit, useAppKit, useAppKitAccount, useAppKitState, useAppKitProvider, useDisconnect } from "@reown/appkit/vue";
+import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
+import { SolanaAdapter } from "@reown/appkit-adapter-solana";
+import { mainnet, arbitrum, base, solana, solanaTestnet } from "@reown/appkit/networks";
+import bs58 from "bs58";
 import { useRouter, useRoute } from "../router/sage-router";
 import { api } from "../api/client";
 import { useToast } from "./toast";
-import { useWallet } from "../composables/auth/useWallet";
 import { useSocketCore } from "./socket-core";
 import { useUI } from "./ui";
-import { VITE_DEFAULT_AUTHENTICATED_VIEW, VITE_ADMIN_WALLET } from "../constants/env";
+import { VITE_DEFAULT_AUTHENTICATED_VIEW, VITE_ADMIN_WALLET, VITE_REOWN_PROJECT_ID } from "../constants/env";
 import { UserRole } from "@wearesage/shared";
 
+let appKitInitialized = false;
 
 export const useAuth = defineStore("auth", () => {
+  // --- Wallet / AppKit Initialization ---
+  if (!appKitInitialized) {
+    const wagmiAdapter = new WagmiAdapter({
+      networks: [mainnet, arbitrum, base],
+      projectId: VITE_REOWN_PROJECT_ID,
+    });
+    const solanaAdapter = new SolanaAdapter({
+      networks: [solana, solanaTestnet],
+      projectId: VITE_REOWN_PROJECT_ID,
+    });
+    createAppKit({
+      adapters: [wagmiAdapter, solanaAdapter],
+      networks: [mainnet, arbitrum, base, solana, solanaTestnet],
+      projectId: VITE_REOWN_PROJECT_ID,
+      metadata: {
+        name: "Kaleidosync",
+        description: "WebGL Music Visualizer",
+        url: window.location.origin,
+        icons: ["https://kaleidosync.com/favicon.png"],
+      },
+      features: {
+        email: true,
+        socials: ["google", "discord", "github"],
+        emailShowWallets: true,
+        onramp: true,
+        swaps: true,
+      },
+    });
+    appKitInitialized = true;
+  }
+
+  const { open: openWalletModal, close: closeWalletModal } = useAppKit();
+  const account = useAppKitAccount();
+  const appKitState = useAppKitState();
+  const { disconnect: disconnectWalletProvider } = useDisconnect();
+  const eip155Provider = useAppKitProvider("eip155");
+  const solanaProvider = useAppKitProvider("solana");
+
+  const isWalletInitializing = ref(true);
+  watch(
+    account,
+    () => {
+      isWalletInitializing.value = false;
+    },
+    { immediate: true, deep: true }
+  );
+
+  const isWalletConnected = computed(() => account.value?.isConnected || false);
+  const walletAddress = computed(() => account.value?.address || null);
+  const isModalOpen = computed(() => appKitState.open || false);
+  const chainType = computed(() => {
+    const addr = walletAddress.value;
+    if (!addr) return null;
+    if (addr.startsWith("0x") && addr.length === 42) return "evm";
+    if (addr.length >= 32 && addr.length <= 44) return "solana";
+    return "unknown";
+  });
+  const connectionType = computed(() => (!isWalletConnected.value ? null : account.value.embeddedWalletInfo ? "social" : "wallet"));
+  const email = computed(() => account.value?.embeddedWalletInfo?.user?.email || null);
+
+  async function waitForProvider(maxWait = 2000) {
+    const start = Date.now();
+    return new Promise((resolve) => {
+      (function poll() {
+        if (
+          (chainType.value === "evm" && eip155Provider.walletProvider) ||
+          (chainType.value === "solana" && solanaProvider.walletProvider)
+        ) {
+          resolve(true);
+        } else if (Date.now() - start > maxWait) {
+          resolve(false);
+        } else {
+          setTimeout(poll, 50);
+        }
+      })();
+    });
+  }
+
+  async function signMessage(message) {
+    if (!isWalletConnected.value || !walletAddress.value) {
+      throw new Error("Wallet not connected");
+    }
+    const ready = await waitForProvider();
+    if (!ready) throw new Error("Provider not available");
+
+    let signature;
+    if (chainType.value === "evm") {
+      signature = await eip155Provider.walletProvider.request({
+        method: "personal_sign",
+        params: [message, walletAddress.value],
+      });
+    } else if (chainType.value === "solana") {
+      const encoded = new TextEncoder().encode(message);
+      const res = await solanaProvider.walletProvider.signMessage(encoded);
+      const raw = res.signature || res;
+      signature = raw instanceof Uint8Array ? bs58.encode(raw) : raw;
+    } else {
+      throw new Error("Unsupported chain for signing");
+    }
+    return signature;
+  }
+
+  // --- Auth / Pinia State ---
   const router = useRouter();
   const route = useRoute();
   const toast = useToast();
-  const wallet = useWallet();
   const ui = useUI();
-  const authToken = ref<string | null>(localStorage.getItem("authToken"));
-  const refreshToken = ref<string | null>(localStorage.getItem("refreshToken"));
-  const user = ref<any>(JSON.parse(localStorage.getItem("user") || "null"));
+
+  const authToken = ref(localStorage.getItem("authToken"));
+  const refreshToken = ref(localStorage.getItem("refreshToken"));
+  const user = ref(JSON.parse(localStorage.getItem("user") || "null"));
+  const originalUser = ref(JSON.parse(localStorage.getItem("originalUser") || "null"));
+  const viewingAsUser = ref(JSON.parse(localStorage.getItem("viewingAsUser") || "null"));
+  const isImpersonating = ref(localStorage.getItem("isImpersonating") === "true");
   const loading = ref(false);
   const isAuthenticating = ref(false);
-  
-  // Track explicit user intent to prevent auto-firing
   const userIntentToSignIn = ref(false);
 
-  // 🎭 Admin impersonation state
-  const originalUser = ref<any>(JSON.parse(localStorage.getItem("originalUser") || "null"));
-  const viewingAsUser = ref<any>(JSON.parse(localStorage.getItem("viewingAsUser") || "null"));
-  const isImpersonating = ref<boolean>(localStorage.getItem("isImpersonating") === "true");
-
   const isAuthenticated = computed(() => !!authToken.value && !!user.value);
-  
-  // Helper computed properties for UI state
-  const isWalletConnected = computed(() => wallet.isConnected.value);
-  const isWalletInitializing = computed(() => wallet.isInitializing.value);
-  const needsWalletConnection = computed(() => !isWalletInitializing.value && !isWalletConnected.value);
-  const needsAuthentication = computed(() => !isWalletInitializing.value && isWalletConnected.value && !isAuthenticated.value);
-
-  // When impersonating, return the target user's wallet address, otherwise the current user's
-  const walletAddress = computed(() => {
-    if (isImpersonating.value && viewingAsUser.value) {
-      return viewingAsUser.value.walletAddress;
-    }
-    return user.value?.walletAddress || null;
-  });
-
-  // For admin checks, ALWAYS use the original user (admin privileges are preserved during impersonation)
-  const isAdmin = computed(() => {
-    const adminUser = isImpersonating.value ? originalUser.value : user.value;
-    return isAuthenticated.value && 
-           adminUser?.walletAddress === VITE_ADMIN_WALLET && 
-           adminUser?.role === UserRole.ADMIN;
-  });
-
-  // The current effective user (for UI display and permissions)
-  const currentUser = computed(() => {
-    if (isImpersonating.value && viewingAsUser.value) {
-      return viewingAsUser.value;
-    }
-    return user.value;
-  });
-
-  const isArtist = computed(() => {
-    return isAuthenticated.value && currentUser.value?.role === UserRole.ARTIST;
-  });
-
-  const isSubscriber = computed(() => {
-    return isAuthenticated.value && currentUser.value?.role === UserRole.SUBSCRIBER;
-  });
-
-  const isPaidTier = computed(() => {
-    return isAuthenticated.value && [UserRole.SUBSCRIBER, UserRole.ARTIST, UserRole.ADMIN].includes(currentUser.value?.role);
-  });
-
-  const isArtistOrAdmin = computed(() => {
-    return isAuthenticated.value && [UserRole.ARTIST, UserRole.ADMIN].includes(currentUser.value?.role);
-  });
-
-  const userRole = computed(() => {
-    if (!isAuthenticated.value || !currentUser.value?.role) return null;
-    const roleNames = {
-      [UserRole.USER]: "USER",
-      [UserRole.ADMIN]: "ADMIN", 
-      [UserRole.ARTIST]: "ARTIST",
-      [UserRole.SUBSCRIBER]: "SUBSCRIBER"
-    };
-    return roleNames[currentUser.value.role] || "UNKNOWN";
-  });
-
-  watch(authToken, (token) => {
-    if (token) {
-      localStorage.setItem("authToken", token);
-    } else {
-      localStorage.removeItem("authToken");
-    }
-  });
-
-  watch(refreshToken, (token) => {
-    if (token) {
-      localStorage.setItem("refreshToken", token);
-    } else {
-      localStorage.removeItem("refreshToken");
-    }
-  });
-
-  watch(
-    user,
-    (userData) => {
-      if (userData) {
-        localStorage.setItem("user", JSON.stringify(userData));
-      } else {
-        localStorage.removeItem("user");
-      }
-    },
-    { deep: true }
+  const currentUser = computed(() => (isImpersonating.value && viewingAsUser.value ? viewingAsUser.value : user.value));
+  const isAdmin = computed(
+    () =>
+      isAuthenticated.value && (currentUser.value?.walletAddress || "") === VITE_ADMIN_WALLET && currentUser.value?.role === UserRole.ADMIN
   );
+  const isArtist = computed(() => isAuthenticated.value && currentUser.value?.role === UserRole.ARTIST);
+  const isSubscriber = computed(() => isAuthenticated.value && currentUser.value?.role === UserRole.SUBSCRIBER);
+  const isPaidTier = computed(
+    () => isAuthenticated.value && [UserRole.SUBSCRIBER, UserRole.ARTIST, UserRole.ADMIN].includes(currentUser.value?.role)
+  );
+  const isArtistOrAdmin = computed(() => isAuthenticated.value && [UserRole.ARTIST, UserRole.ADMIN].includes(currentUser.value?.role));
+  const userRole = computed(() => {
+    if (!isAuthenticated.value) return null;
+    return UserRole[currentUser.value.role] || "UNKNOWN";
+  });
 
-  // 🎭 Impersonation state watchers
+  // Persist to localStorage
+  watch(authToken, (val) => (val ? localStorage.setItem("authToken", val) : localStorage.removeItem("authToken")));
+  watch(refreshToken, (val) => (val ? localStorage.setItem("refreshToken", val) : localStorage.removeItem("refreshToken")));
+  watch(user, (val) => (val ? localStorage.setItem("user", JSON.stringify(val)) : localStorage.removeItem("user")), { deep: true });
   watch(
     originalUser,
-    (userData) => {
-      if (userData) {
-        localStorage.setItem("originalUser", JSON.stringify(userData));
-      } else {
-        localStorage.removeItem("originalUser");
-      }
-    },
+    (val) => (val ? localStorage.setItem("originalUser", JSON.stringify(val)) : localStorage.removeItem("originalUser")),
     { deep: true }
   );
-
   watch(
     viewingAsUser,
-    (userData) => {
-      if (userData) {
-        localStorage.setItem("viewingAsUser", JSON.stringify(userData));
-      } else {
-        localStorage.removeItem("viewingAsUser");
-      }
-    },
+    (val) => (val ? localStorage.setItem("viewingAsUser", JSON.stringify(val)) : localStorage.removeItem("viewingAsUser")),
     { deep: true }
   );
-
-  watch(isImpersonating, (impersonating) => {
-    if (impersonating) {
-      localStorage.setItem("isImpersonating", "true");
-    } else {
-      localStorage.removeItem("isImpersonating");
-    }
-  });
-
-  // Removed router logic - moved to Root.vue where it belongs!
-
-  async function validateStoredToken(): Promise<boolean> {
-    const token = localStorage.getItem("authToken");
-
-    if (!token) return false;
-
-    try {
-      // Socket-first token validation
-      const socketCore = useSocketCore();
-
-      // Ensure socket is connected
-      if (!socketCore.connected) {
-        await socketCore.connect();
-      }
-      await socketCore.waitForConnection();
-
-      return new Promise<boolean>((resolve) => {
-        let timeoutId: NodeJS.Timeout | null = null;
-        let isResolved = false;
-
-        // Set up listeners for socket validation response
-        const handleSuccess = ({ user: userData }: any) => {
-          if (isResolved) return;
-          isResolved = true;
-          
-          user.value = userData;
-          
-          // 🚀 Extension Auth Handoff for token validation - Send existing auth to extension
-          try {
-            if (typeof window !== 'undefined' && window.postMessage && authToken.value) {
-              console.log("🔗 Extension handoff for existing auth...");
-              window.postMessage({
-                type: 'KALEIDOSYNC_AUTH_HANDOFF',
-                source: 'kaleidosync-page',
-                authToken: authToken.value,
-                refreshToken: refreshToken.value,
-                user: userData,
-                timestamp: Date.now()
-              }, '*');
-              console.log("✅ Extension auth handoff sent for existing session");
-            }
-          } catch (error) {
-            console.warn("Extension handoff failed (extension may not be installed):", error);
-          }
-          
-          cleanup();
-          resolve(true);
-        };
-
-        const handleInvalid = () => {
-          if (isResolved) return;
-          isResolved = true;
-          
-          clearAuthState();
-          cleanup();
-          resolve(false);
-        };
-
-        // Cleanup function
-        const cleanup = () => {
-          if (timeoutId) {
-            clearTimeout(timeoutId);
-            timeoutId = null;
-          }
-          socketCore.off("auth:success", handleSuccess);
-          socketCore.off("auth:invalid", handleInvalid);
-        };
-
-        // Set up socket listeners
-        socketCore.on("auth:success", handleSuccess);
-        socketCore.on("auth:invalid", handleInvalid);
-
-        // Send token validation request (after connection is established)
-        console.log("🔑 Sending token validation request...");
-        socketCore.emit("auth:validate-token", token);
-
-        // Timeout after 5 seconds and fall back to HTTP
-        timeoutId = setTimeout(() => {
-          if (isResolved) return;
-          isResolved = true;
-          
-          cleanup();
-          console.log("Socket validation timeout, falling back to HTTP");
-
-          // HTTP fallback
-          api
-            .get("/api/auth/validate")
-            .then((response) => {
-              if (response.data?.user) {
-                user.value = response.data.user;
-                resolve(true);
-              } else {
-                resolve(false);
-              }
-            })
-            .catch((error) => {
-              if (error.response?.status === 401) clearAuthState();
-              resolve(false);
-            });
-        }, 5000);
-      });
-    } catch (error: any) {
-      console.error("Token validation error:", error);
-      return false;
-    }
-  }
+  watch(isImpersonating, (val) => (val ? localStorage.setItem("isImpersonating", "true") : localStorage.removeItem("isImpersonating")));
 
   function clearAuthState() {
     authToken.value = null;
@@ -265,126 +174,81 @@ export const useAuth = defineStore("auth", () => {
     localStorage.removeItem("authToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
-
-    // Clean up any lingering socket auth listeners
-    const socketCore = useSocketCore();
-    socketCore.off("auth:success");
-    socketCore.off("auth:challenge-response");
-    socketCore.off("auth:error");
-    socketCore.off("auth:invalid");
   }
 
-  async function connectWallet() {
+  async function validateStoredToken() {
+    const token = authToken.value;
+    if (!token) return false;
     try {
-      // Force disconnect first to clear any stale state
-      if (wallet.isConnected) {
-        console.log("💰 Wallet shows connected, disconnecting first to clear state");
-        await wallet.disconnect();
-      }
+      const socket = useSocketCore();
+      if (!socket.connected) await socket.connect();
+      await socket.waitForConnection();
+      return new Promise((resolve) => {
+        let settled = false;
+        const timeout = setTimeout(async () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+          try {
+            const resp = await api.get("/api/auth/validate");
+            if (resp.data.user) {
+              user.value = resp.data.user;
+              resolve(true);
+            } else {
+              resolve(false);
+            }
+          } catch {
+            clearAuthState();
+            resolve(false);
+          }
+        }, 5000);
 
-      console.log("💰 Opening wallet connection modal");
-      toast.message("Please connect your wallet...");
-      await wallet.connect();
-      
-      // Check if connection was successful
-      if (!wallet.isConnected || !wallet.address.value) {
-        toast.error("Wallet connection was cancelled or failed");
-        return;
-      }
-      
-      toast.success(`Wallet connected: ${wallet.address.value.slice(0, 8)}...`);
-    } catch (error: any) {
-      console.error("Wallet connection failed:", error);
-      toast.error("Failed to connect wallet");
-      throw error;
+        socket.on("auth:success", ({ user: u }) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+          user.value = u;
+          resolve(true);
+        });
+        socket.on("auth:invalid", () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+          clearAuthState();
+          resolve(false);
+        });
+        socket.emit("auth:validate-token", token);
+      });
+    } catch (err) {
+      console.error(err);
+      return false;
     }
   }
 
-  async function signIn() {
-    try {
-      // Require wallet to be connected first
-      if (!wallet.isConnected || !wallet.address.value) {
-        toast.error("Please connect your wallet first");
-        throw new Error("Wallet not connected");
-      }
+  async function connectWallet() {
+    if (isWalletConnected.value) await disconnectWalletProvider();
+    await openWalletModal();
+    if (!isWalletConnected.value) throw new Error("Wallet connection failed");
+  }
 
-      // Set user intent flag to prevent auto-firing
-      userIntentToSignIn.value = true;
-      console.log("🟢 User intent flag set to TRUE - explicit signIn called");
-      isAuthenticating.value = true;
-      
-      const walletAddress = wallet.address.value;
-      console.log("💰 Wallet connected - proceeding with authentication for:", walletAddress.slice(0, 8));
-      
-      // HTTP-based authentication (much simpler!)
-      toast.message("Getting authentication challenge...");
-      
-      // Step 1: Get challenge from server
-      const challengeResponse = await api.post("/api/auth/challenge", {
-        address: walletAddress
-      });
-      
-      const { message } = challengeResponse.data;
-      console.log("🔑 Challenge received:", message.substring(0, 50) + "...");
-      
-      // Step 2: Sign the challenge message
-      toast.message("Please sign the message in your wallet...");
-      const signature = await wallet.signMessage(message);
-      
-      // Step 3: Verify signature and get tokens
-      toast.message("Verifying signature...");
-      const authResponse = await api.post("/api/auth/verify", {
-        message,
-        signature,
-        address: walletAddress
-      });
-      
-      // Step 4: Store auth data
-      const { user: userData, tokens } = authResponse.data;
+  async function signIn() {
+    // 1. if they’ve never connected, just open the modal
+    if (!isWalletConnected.value) {
+      await connectWallet();
+      return; // they cancelled
+    }
+    userIntentToSignIn.value = true;
+    isAuthenticating.value = true;
+    try {
+      const { message } = (await api.post("/api/auth/challenge", { address: walletAddress.value })).data;
+      const signature = await signMessage(message);
+      const { user: u, tokens } = (await api.post("/api/auth/verify", { message, signature, address: walletAddress.value })).data;
       authToken.value = tokens.accessToken;
       refreshToken.value = tokens.refreshToken;
-      user.value = userData;
-      
-      toast.success(`Welcome ${userData.walletAddress.slice(0, 8)}!`);
-      
-      // 🚀 Extension Auth Handoff - Send auth data to Chrome extension if installed
-      try {
-        if (typeof window !== 'undefined' && window.postMessage) {
-          console.log("🔗 Attempting extension auth handoff...");
-          window.postMessage({
-            type: 'KALEIDOSYNC_AUTH_HANDOFF',
-            source: 'kaleidosync-page',
-            authToken: tokens.accessToken,
-            refreshToken: tokens.refreshToken,
-            user: userData,
-            timestamp: Date.now()
-          }, '*');
-          console.log("✅ Extension auth handoff message sent");
-        }
-      } catch (error) {
-        console.warn("Extension handoff failed (extension may not be installed):", error);
-      }
-      
-      // Redirect if on homepage
-      if (route.value.path === "/") {
-        console.log("🚀 HTTP auth successful, redirecting to", VITE_DEFAULT_AUTHENTICATED_VIEW);
-        router.replace(VITE_DEFAULT_AUTHENTICATED_VIEW);
-      }
-      
-    } catch (error: any) {
-      console.error("Sign in failed:", error);
-      
-      if (error.message?.includes("rejected")) {
-        toast.error("Signature rejected");
-      } else if (error.message?.includes("aborted") || error.message?.includes("Request was aborted")) {
-        toast.message("Sign in cancelled");
-        return; // Don't throw on user cancellation
-      } else if (error.response?.status === 401) {
-        toast.error("Invalid signature");
-      } else {
-        toast.error("Authentication failed");
-      }
-      throw error;
+      user.value = u;
+      if (route.path === "/") router.replace(VITE_DEFAULT_AUTHENTICATED_VIEW);
+    } catch (e) {
+      throw e;
     } finally {
       isAuthenticating.value = false;
       userIntentToSignIn.value = false;
@@ -393,144 +257,87 @@ export const useAuth = defineStore("auth", () => {
 
   async function signOut() {
     try {
-      
-      // Socket-first logout
-      const socketCore = useSocketCore();
-      socketCore.emit("auth:logout");
+      // 1️⃣ Tell your socket/server you’re out
+      const socket = useSocketCore();
+      socket.emit("auth:logout");
 
-      // HTTP logout as fallback
+      // 2️⃣ Fire the HTTP logout as a fallback
       await api.post("/api/auth/logout").catch(() => {});
     } finally {
+      // 3️⃣ Disconnect from whatever wallet is attached
+      await disconnectWalletProvider();
+
+      // 4️⃣ If the modal is still open for some reason, close it
+      closeWalletModal();
+
+      // 5️⃣ Wipe all your auth bits & localStorage
       clearAuthState();
-      
-      // Reset all stores to clear tokens, intervals, and state
-      try {
-        const { useSpotify } = await import('./spotify');
-        const { useSources } = await import('./sources');
-        const { useSketches } = await import('./sketches');
-        
-        const spotify = useSpotify();
-        const sources = useSources();
-        const sketches = useSketches();
-        
-        spotify.reset();
-        sources.reset();
-        sketches.reset();
-      } catch (error) {
-        console.warn('Failed to reset stores on logout:', error);
-      }
-      
-      // No need to disconnect wallet - it's just a signing tool
-      toast.message("Signed out successfully");
+
+      // 6️⃣ Reset impersonation
+      originalUser.value = null;
+      viewingAsUser.value = null;
+      isImpersonating.value = false;
+
+      // 7️⃣ Redirect home
       router.replace("/");
     }
+  }
+
+  async function startImpersonation(target) {
+    if (!isAdmin.value) throw new Error("Admin required");
+    originalUser.value = { ...user.value };
+    const { valid, user: u } = (await api.post("/api/admin/impersonation/validate", { walletAddress: target })).data;
+    if (!valid) throw new Error("Cannot impersonate");
+    viewingAsUser.value = u;
+    isImpersonating.value = true;
+    useSocketCore().emit("admin:start-impersonation", { target });
+  }
+
+  async function stopImpersonation() {
+    useSocketCore().emit("admin:stop-impersonation");
+    originalUser.value = null;
+    viewingAsUser.value = null;
+    isImpersonating.value = false;
   }
 
   async function initialize() {
     loading.value = true;
     ui.setLoadingDots(true);
-    try {
-      await validateStoredToken();
-    } finally {
-      loading.value = false;
-      ui.setLoadingDots(false);
-    }
-  }
-
-  // 🎭 Admin impersonation methods
-  async function startImpersonation(targetWalletAddress: string) {
-    if (!isAdmin.value) {
-      toast.error("Admin access required for impersonation");
-      throw new Error("Admin access required");
-    }
-
-    if (isImpersonating.value) {
-      toast.error("Already impersonating a user");
-      throw new Error("Already impersonating");
-    }
-
-    try {
-      // Store the original admin user
-      originalUser.value = { ...user.value };
-      
-      // Validate the target user exists via API
-      const response = await api.post("/api/admin/impersonation/validate", {
-        walletAddress: targetWalletAddress
-      });
-
-      if (!response.data.valid) {
-        throw new Error(response.data.message || "Cannot impersonate this user");
-      }
-
-      // Set the target user data
-      viewingAsUser.value = response.data.user;
-      isImpersonating.value = true;
-
-      // Notify socket server about impersonation
-      const socketCore = useSocketCore();
-      if (socketCore.connected) {
-        socketCore.emit("admin:start-impersonation", { targetWalletAddress });
-      }
-
-      toast.success(`Now viewing as ${targetWalletAddress.slice(0, 8)}...`);
-    } catch (error: any) {
-      console.error("Failed to start impersonation:", error);
-      toast.error(error.message || "Failed to start impersonation");
-      throw error;
-    }
-  }
-
-  async function stopImpersonation() {
-    if (!isImpersonating.value) {
-      return;
-    }
-
-    try {
-      // Notify socket server about stopping impersonation
-      const socketCore = useSocketCore();
-      if (socketCore.connected) {
-        socketCore.emit("admin:stop-impersonation");
-      }
-
-      // Clear impersonation state
-      originalUser.value = null;
-      viewingAsUser.value = null;
-      isImpersonating.value = false;
-
-      toast.success("Stopped impersonation - back to admin view");
-    } catch (error: any) {
-      console.error("Failed to stop impersonation:", error);
-      toast.error("Failed to stop impersonation");
-    }
+    await validateStoredToken();
+    loading.value = false;
+    ui.setLoadingDots(false);
   }
 
   return {
-    authToken: computed(() => authToken.value),
-    refreshToken: computed(() => refreshToken.value),
-    user: computed(() => user.value),
-    walletAddress,
-    loading: computed(() => loading.value),
-    isAuthenticating: computed(() => isAuthenticating.value),
-    isAuthenticated,
+    // Wallet
     isWalletConnected,
+    walletAddress,
+    chainType,
+    connectionType,
+    email,
+    isModalOpen,
     isWalletInitializing,
-    needsWalletConnection,
-    needsAuthentication,
+    openWalletModal,
+    closeWalletModal,
+    disconnectWalletProvider,
+    signMessage,
+    connectWallet,
+    // Auth
+    authToken,
+    refreshToken,
+    user,
+    isAuthenticated,
     isAdmin,
     isArtist,
     isSubscriber,
     isPaidTier,
     isArtistOrAdmin,
     userRole,
-    connectWallet,
+    loading,
+    isAuthenticating,
     signIn,
     signOut,
     initialize,
-    // 🎭 Impersonation
-    currentUser,
-    originalUser: computed(() => originalUser.value),
-    viewingAsUser: computed(() => viewingAsUser.value),
-    isImpersonating: computed(() => isImpersonating.value),
     startImpersonation,
     stopImpersonation,
   };

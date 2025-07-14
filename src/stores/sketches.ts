@@ -4088,7 +4088,7 @@ export const useSketches = defineStore("sketches", () => {
   const error = ref(null);
   const index = computed(() => {
     if (!sketch.value) return -1;
-    return iterations.value.findIndex((s) => s.id === sketch.value!.id);
+    return iterations.value.findIndex((s) => s.shader === sketch.value!.shader);
   });
   const shader = ref();
   const uniforms = ref<Variant>({});

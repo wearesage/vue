@@ -43,9 +43,6 @@ export function useWallet() {
         onramp: true,
         swaps: true,
       },
-      featuredWalletIds: ["metamask", "phantom", "coinbaseWallet", "walletConnect"],
-      termsConditionsUrl: `${window.location.origin}/terms`,
-      privacyPolicyUrl: `${window.location.origin}/privacy`,
     });
 
     appKitInitialized = true;
@@ -64,17 +61,11 @@ export function useWallet() {
 
   // Watch for account state to stabilize
   watch(
-    [account, appKitState],
+    account,
     () => {
-      // Consider initialization complete when account state is stable
-      if (isInitializing.value) {
-        // Give enough time for wallet to check stored connections
-        setTimeout(() => {
-          isInitializing.value = false;
-        }, 1500); // Match the time you observed for full wallet initialization
-      }
+      console.log(account.value?.status === "connected");
     },
-    { immediate: true }
+    { immediate: true, deep: true }
   );
 
   // Computed properties
@@ -108,7 +99,7 @@ export function useWallet() {
   /**
    * Open wallet connection modal
    */
-  async function connect() {
+  async function openModal() {
     await open();
   }
 
@@ -234,7 +225,7 @@ export function useWallet() {
     isInitializing,
 
     // Actions
-    connect,
+    openModal,
     closeModal,
     disconnect: disconnectWallet,
     signMessage,

@@ -13,12 +13,10 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { useAuth } from "../../stores";
-import { useWallet } from "../../composables/auth/useWallet";
 import Row from "../layout/Row.vue";
 import IconButton from "./IconButton.vue";
 
 const auth = useAuth();
-const wallet = useWallet();
 const logout = ref(false);
 
 // Computed truncated address
